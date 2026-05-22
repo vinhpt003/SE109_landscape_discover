@@ -1,29 +1,59 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 
-// Pages — sẽ tạo dần sau
-// import Home           from './pages/Home/Home'
-// import Discover       from './pages/Discover/Discover'
-// import LandmarkDetail from './pages/LandmarkDetail/LandmarkDetail'
-// import About          from './pages/About/About'
-// import NotFound       from './pages/NotFound/NotFound'
+// ── User-facing pages ──────────────────────────────────────────────
+const Home           = lazy(() => import('./pages/Home'))
+const LandmarkDetail = lazy(() => import('./pages/LandmarkDetail'))
 
-// Placeholder tạm thời cho đến khi có pages thật
-const Home           = () => <div className="container-page py-10">🏠 Home</div>
-const Discover       = () => <div className="container-page py-10">🗺️ Discover</div>
-const LandmarkDetail = () => <div className="container-page py-10">📍 Landmark Detail</div>
-const About          = () => <div className="container-page py-10">ℹ️ About</div>
-const NotFound       = () => <div className="container-page py-10">404 — Không tìm thấy trang</div>
+// ── Auth pages ─────────────────────────────────────────────────────
+const Login    = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
+
+// ── Admin pages ────────────────────────────────────────────────────
+const AdminDashboard      = lazy(() => import('./pages/Admin/Dashboard'))
+const AdminLandmarks      = lazy(() => import('./pages/Admin/Landmarks'))
+const AdminEditLandmark   = lazy(() => import('./pages/Admin/EditLandmark'))
+
+// ── 404 ────────────────────────────────────────────────────────────
+const NotFound = lazy(() => import('./pages/NotFound'))
+
+// ── Loading fallback toàn trang ────────────────────────────────────
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
+        <p className="text-label-md text-on-surface-variant">Đang tải...</p>
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/"            element={<Home />} />
-        <Route path="/discover"    element={<Discover />} />
-        <Route path="/landmark/:id" element={<LandmarkDetail />} />
-        <Route path="/about"       element={<About />} />
-        <Route path="*"            element={<NotFound />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+
+          {/* ── Trang người dùng ─────────────────────────────── */}
+          <Route path="/"                   element={<Home />} />
+          <Route path="/landmarks/:id"      element={<LandmarkDetail />} />
+
+          {/* ── Auth ─────────────────────────────────────────── */}
+          <Route path="/login"              element={<Login />} />
+          <Route path="/register"           element={<Register />} />
+
+          {/* ── Admin ─────────────────────────────────────────── */}
+          <Route path="/admin"                        element={<AdminDashboard />} />
+          <Route path="/admin/landmarks"              element={<AdminLandmarks />} />
+          <Route path="/admin/landmarks/new"          element={<AdminEditLandmark />} />
+          <Route path="/admin/landmarks/:id/edit"     element={<AdminEditLandmark />} />
+
+          {/* ── 404 ───────────────────────────────────────────── */}
+          <Route path="*"                   element={<NotFound />} />
+
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }
