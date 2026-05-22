@@ -1,170 +1,164 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    './index.html',
+    './src/**/*.{ts,tsx}',
   ],
+  darkMode: 'class',
   theme: {
-    // ─── Border Radius ────────────────────────────────────────────────
-    borderRadius: {
-      sm:      '0.25rem',   // 4px  — small tags, badges
-      DEFAULT: '0.5rem',    // 8px  — buttons, inputs, thumbnails
-      md:      '0.75rem',   // 12px
-      lg:      '1rem',      // 16px — cards, images
-      xl:      '1.5rem',    // 24px — large modals
-      full:    '9999px',    // pill — avatars, status badges
-    },
-
     extend: {
-      // ─── Colors ───────────────────────────────────────────────────────
+
+      // ─── Colors — đúng 100% theo Stitch design tokens ───────────────
       colors: {
         // Primary — Ocean Blue
-        primary: {
-          DEFAULT:   '#004581',
-          container: '#005daa',
-          fixed:     '#d4e3ff',
-          'fixed-dim':        '#a5c8ff',
-          'on':               '#ffffff',
-          'on-container':     '#bed7ff',
-          'on-fixed':         '#001c3a',
-          'on-fixed-variant': '#004785',
-          inverse:            '#a5c8ff',
-          tint:               '#075fac',
-        },
+        primary:                    '#004581',
+        'primary-container':        '#005daa',
+        'primary-fixed':            '#d4e3ff',
+        'primary-fixed-dim':        '#a5c8ff',
+        'on-primary':               '#ffffff',
+        'on-primary-container':     '#bed7ff',
+        'on-primary-fixed':         '#001c3a',
+        'on-primary-fixed-variant': '#004785',
+        'inverse-primary':          '#a5c8ff',
+        'surface-tint':             '#075fac',
 
         // Secondary — Teal
-        secondary: {
-          DEFAULT:   '#006a64',
-          container: '#6ef4ea',
-          fixed:     '#72f7ed',
-          'fixed-dim':        '#50dad1',
-          'on':               '#ffffff',
-          'on-container':     '#006f69',
-          'on-fixed':         '#00201e',
-          'on-fixed-variant': '#00504b',
-        },
+        secondary:                      '#006a64',
+        'secondary-container':          '#6ef4ea',
+        'secondary-fixed':              '#72f7ed',
+        'secondary-fixed-dim':          '#50dad1',
+        'on-secondary':                 '#ffffff',
+        'on-secondary-container':       '#006f69',
+        'on-secondary-fixed':           '#00201e',
+        'on-secondary-fixed-variant':   '#00504b',
 
         // Tertiary — Sunset Orange / Sand
-        tertiary: {
-          DEFAULT:   '#6b3700',
-          container: '#8d4b00',
-          fixed:     '#ffdcc3',
-          'fixed-dim':        '#ffb77d',
-          'on':               '#ffffff',
-          'on-container':     '#ffcba3',
-          'on-fixed':         '#2f1500',
-          'on-fixed-variant': '#6e3900',
-        },
+        tertiary:                      '#6b3700',
+        'tertiary-container':          '#8d4b00',
+        'tertiary-fixed':              '#ffdcc3',
+        'tertiary-fixed-dim':          '#ffb77d',
+        'on-tertiary':                 '#ffffff',
+        'on-tertiary-container':       '#ffcba3',
+        'on-tertiary-fixed':           '#2f1500',
+        'on-tertiary-fixed-variant':   '#6e3900',
 
         // Error — Crimson
-        error: {
-          DEFAULT:      '#ba1a1a',
-          container:    '#ffdad6',
-          'on':         '#ffffff',
-          'on-container': '#93000a',
-        },
+        error:                '#ba1a1a',
+        'error-container':    '#ffdad6',
+        'on-error':           '#ffffff',
+        'on-error-container': '#93000a',
 
         // Surface
-        surface: {
-          DEFAULT:     '#f8f9fa',
-          dim:         '#d9dadb',
-          bright:      '#f8f9fa',
-          variant:     '#e1e3e4',
-          'container-lowest':  '#ffffff',
-          'container-low':     '#f3f4f5',
-          'container':         '#edeeef',
-          'container-high':    '#e7e8e9',
-          'container-highest': '#e1e3e4',
-          'on':                '#191c1d',
-          'on-variant':        '#414751',
-          'inverse':           '#2e3132',
-          'inverse-on':        '#f0f1f2',
-        },
+        surface:                     '#f8f9fa',
+        'surface-dim':               '#d9dadb',
+        'surface-bright':            '#f8f9fa',
+        'surface-variant':           '#e1e3e4',
+        'surface-container-lowest':  '#ffffff',
+        'surface-container-low':     '#f3f4f5',
+        'surface-container':         '#edeeef',
+        'surface-container-high':    '#e7e8e9',
+        'surface-container-highest': '#e1e3e4',
+        'on-surface':                '#191c1d',
+        'on-surface-variant':        '#414751',
+        'inverse-surface':           '#2e3132',
+        'inverse-on-surface':        '#f0f1f2',
 
         // Background
-        background: {
-          DEFAULT: '#f8f9fa',
-          on:      '#191c1d',
-        },
+        background:       '#f8f9fa',
+        'on-background':  '#191c1d',
 
         // Outline
-        outline: {
-          DEFAULT: '#727782',
-          variant: '#c1c6d3',
-        },
+        outline:          '#727782',
+        'outline-variant': '#c1c6d3',
       },
 
-      // ─── Font Family ──────────────────────────────────────────────────
-      fontFamily: {
-        display: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui'],
-        sans:    ['Inter', 'ui-sans-serif', 'system-ui'],
+      // ─── Border Radius ───────────────────────────────────────────────
+      borderRadius: {
+        DEFAULT: '0.5rem',     // 8px — buttons, inputs
+        sm:      '0.25rem',    // 4px
+        md:      '0.75rem',    // 12px
+        lg:      '1rem',       // 16px — cards
+        xl:      '1.5rem',     // 24px
+        full:    '9999px',     // pill
       },
 
-      // ─── Font Size (với lineHeight & letterSpacing) ───────────────────
-      fontSize: {
-        // Display
-        'display-lg': ['3rem', {          // 48px
-          lineHeight:    '3.5rem',        // 56px
-          letterSpacing: '-0.02em',
-          fontWeight:    '700',
-        }],
-        // Headlines
-        'headline-lg': ['2rem', {         // 32px
-          lineHeight:    '2.5rem',        // 40px
-          letterSpacing: '-0.01em',
-          fontWeight:    '700',
-        }],
-        'headline-lg-mobile': ['1.75rem', { // 28px
-          lineHeight:    '2.25rem',          // 36px
-          fontWeight:    '700',
-        }],
-        'headline-md': ['1.5rem', {       // 24px
-          lineHeight:    '2rem',          // 32px
-          fontWeight:    '600',
-        }],
-        // Body
-        'body-lg': ['1.125rem', {         // 18px
-          lineHeight:  '1.75rem',         // 28px
-          fontWeight:  '400',
-        }],
-        'body-md': ['1rem', {             // 16px
-          lineHeight:  '1.5rem',          // 24px
-          fontWeight:  '400',
-        }],
-        // Label & Caption
-        'label-md': ['0.875rem', {        // 14px
-          lineHeight:    '1.25rem',       // 20px
-          letterSpacing: '0.05em',
-          fontWeight:    '600',
-        }],
-        'caption': ['0.75rem', {          // 12px
-          lineHeight:  '1rem',            // 16px
-          fontWeight:  '500',
-        }],
-      },
-
-      // ─── Spacing ──────────────────────────────────────────────────────
+      // ─── Spacing ─────────────────────────────────────────────────────
       spacing: {
-        'base':           '8px',    // 8px  — base unit
-        'gutter':         '24px',   // 24px — column gutter (desktop)
-        'margin-mobile':  '16px',   // 16px — page margin (mobile)
-        'margin-desktop': '40px',   // 40px — page margin (desktop)
-        'section-gap':    '80px',   // 80px — between major sections
+        'base':             '8px',
+        'gutter':           '24px',
+        'margin-mobile':    '16px',
+        'margin-desktop':   '40px',
+        'section-gap':      '80px',
+        'container-max':    '1280px',
       },
 
-      // ─── Max Width ────────────────────────────────────────────────────
+      // ─── Font Family ─────────────────────────────────────────────────
+      fontFamily: {
+        display: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans:    ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // alias ngắn gọn theo design
+        'headline-lg':        ['"Plus Jakarta Sans"', 'sans-serif'],
+        'headline-md':        ['"Plus Jakarta Sans"', 'sans-serif'],
+        'headline-lg-mobile': ['"Plus Jakarta Sans"', 'sans-serif'],
+        'display-lg':         ['"Plus Jakarta Sans"', 'sans-serif'],
+        'body-lg':            ['"Inter"', 'sans-serif'],
+        'body-md':            ['"Inter"', 'sans-serif'],
+        'label-md':           ['"Inter"', 'sans-serif'],
+        caption:              ['"Inter"', 'sans-serif'],
+      },
+
+      // ─── Font Size — scale đúng theo Stitch ─────────────────────────
+      fontSize: {
+        'display-lg': [
+          '48px',
+          { lineHeight: '56px', letterSpacing: '-0.02em', fontWeight: '700' },
+        ],
+        'headline-lg': [
+          '32px',
+          { lineHeight: '40px', letterSpacing: '-0.01em', fontWeight: '700' },
+        ],
+        'headline-lg-mobile': [
+          '28px',
+          { lineHeight: '36px', fontWeight: '700' },
+        ],
+        'headline-md': [
+          '24px',
+          { lineHeight: '32px', fontWeight: '600' },
+        ],
+        'body-lg': [
+          '18px',
+          { lineHeight: '28px', fontWeight: '400' },
+        ],
+        'body-md': [
+          '16px',
+          { lineHeight: '24px', fontWeight: '400' },
+        ],
+        'label-md': [
+          '14px',
+          { lineHeight: '20px', letterSpacing: '0.05em', fontWeight: '600' },
+        ],
+        caption: [
+          '12px',
+          { lineHeight: '16px', fontWeight: '500' },
+        ],
+      },
+
+      // ─── Box Shadow — ambient shadows từ Stitch ─────────────────────
+      boxShadow: {
+        card:       '0 4px 15px rgba(0, 0, 0, 0.04)',
+        'card-hover': '0 8px 25px rgba(0, 0, 0, 0.08)',
+        float:      '0 2px 8px rgba(0, 0, 0, 0.12)',
+        ambient:    '0 4px 15px rgba(0, 0, 0, 0.04)',
+      },
+
+      // ─── Max Width ───────────────────────────────────────────────────
       maxWidth: {
         container: '1280px',
       },
 
-      // ─── Box Shadow (Elevation từ DESIGN.md) ─────────────────────────
-      boxShadow: {
-        // Level 1 — Card resting state (Blur 15px, 4% opacity, Y 4px)
-        'card':       '0 4px 15px rgba(0, 0, 0, 0.04)',
-        // Level 2 — Card hover state (Y 8px)
-        'card-hover': '0 8px 20px rgba(0, 0, 0, 0.08)',
-        // Floating — Buttons, Avatars
-        'float':      '0 2px 8px rgba(0, 0, 0, 0.12)',
+      // ─── Backdrop Blur (dùng cho TopNavBar) ─────────────────────────
+      backdropBlur: {
+        md: '12px',
       },
     },
   },
