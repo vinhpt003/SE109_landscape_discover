@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -9,34 +10,64 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
-  async login(loginDto: LoginDto) {
-    // 1. Tìm user trong Database
-    const user = await this.prisma.user.findUnique({
-      where: { email: loginDto.email },
+  async register(dto: RegisterDto) {
+    const existing = await this.prisma.user.findFirst({
+      where: { OR: [{ email: dto.email }, { userName: dto.userName }] },
+    });
+    if (existing) {
+      throw new ConflictException('Email hoặc tên đăng nhập đã được sử dụng');
+    }
+
+    const hashed = await bcrypt.hash(dto.password, 10);
+    const user = await this.prisma.user.create({
+      data: { userName: dto.userName, email: dto.email, password: hashed },
     });
 
-    // 2. Kiểm tra xem có phải ADMIN không
-    if (!user || user.role !== 'ADMIN') {
-      throw new UnauthorizedException('Sai thông tin đăng nhập hoặc không đủ quyền!');
+    return this.buildTokenResponse(user);
+  }
+
+  async login(dto: LoginDto) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: dto.identifier }, { userName: dto.identifier }],
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Sai thông tin đăng nhập');
     }
 
-    // 3. Kiểm tra mật khẩu (giả định mật khẩu trong DB đã được hash bằng bcrypt)
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Sai thông tin đăng nhập!');
+      throw new UnauthorizedException('Sai mật khẩu');
     }
 
-    // 4. Tạo JWT Token trả về cho Client
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    return this.buildTokenResponse(user);
+  }
+
+  private async buildTokenResponse(user: {
+    userId: string;
+    email: string;
+    userName: string;
+    role: string;
+    avatar: string | null;
+  }) {
+    const payload = {
+      sub: user.userId,
+      email: user.email,
+      role: user.role,
+      userName: user.userName,
+    };
     return {
       access_token: await this.jwtService.signAsync(payload),
       user: {
-        id: user.id,
+        userId: user.userId,
         email: user.email,
-        fullName: user.fullName,
+        userName: user.userName,
         role: user.role,
+        avatar: user.avatar,
       },
     };
   }

@@ -1,67 +1,24 @@
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
+import { postsService } from '../../services/posts.service'
+import type { Post } from '../../types'
 
-// ── Mock data ──────────────────────────────────────────────────────────────
-const FEATURED = {
-  id: 'navagio',
-  name: 'Bãi biển Navagio, Zakynthos',
-  rating: 4.9,
-  reviewCount: 342,
-  image: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1400&q=80',
-}
+// ── Subcomponent ───────────────────────────────────────────────────────────
+function PostCard({ post }: { post: Post }) {
+  const avgRating = post.avgRating ?? (post._count?.ratings ? null : null)
+  const ratingCount = post._count?.ratings ?? 0
 
-const TRENDING = [
-  {
-    id: '1',
-    name: 'Hoàng Thành Huế',
-    region: 'Miền Trung',
-    rating: 4.8,
-    reviews: 120,
-    image: 'https://images.unsplash.com/photo-1557750255-c76072a7aad1?w=600&q=80',
-    description: 'Di tích lịch sử kinh đô triều Nguyễn, công trình kiến trúc đồ sộ giữa lòng Huế.',
-  },
-  {
-    id: '2',
-    name: 'Vịnh Hạ Long',
-    region: 'Miền Bắc',
-    rating: 4.9,
-    reviews: 845,
-    image: 'https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80',
-    description: 'Kỳ quan thiên nhiên thế giới với hàng nghìn đảo đá vôi phủ rừng xanh.',
-  },
-  {
-    id: '3',
-    name: 'Phố cổ Hội An',
-    region: 'Miền Trung',
-    rating: 4.7,
-    reviews: 630,
-    image: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=600&q=80',
-    description: 'Đô thị cổ giao thương thế kỷ 15–19, được UNESCO công nhận Di sản Thế giới.',
-  },
-  {
-    id: '4',
-    name: 'Mũi Né',
-    region: 'Miền Nam',
-    rating: 4.5,
-    reviews: 290,
-    image: 'https://images.unsplash.com/photo-1585016058010-a285b9756fde?w=600&q=80',
-    description: 'Đồi cát trắng, cát đỏ hùng vĩ giữa nắng biển miền Nam rực rỡ.',
-  },
-]
-
-// ── Subcomponents ──────────────────────────────────────────────────────────
-function LandmarkCard({ id, name, region, rating, reviews, image, description }: typeof TRENDING[0]) {
   return (
     <Link
-      to={`/landmarks/${id}`}
+      to={`/landmarks/${post.postId}`}
       className="bg-surface-container-lowest rounded-lg overflow-hidden card-shadow group cursor-pointer block"
     >
-      {/* Image */}
       <div className="relative h-48 w-full overflow-hidden">
         <img
-          src={image}
-          alt={name}
+          src={post.imageUrl ?? 'https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80'}
+          alt={post.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <button
@@ -72,20 +29,23 @@ function LandmarkCard({ id, name, region, rating, reviews, image, description }:
         </button>
       </div>
 
-      {/* Info */}
       <div className="p-5">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="font-label-md text-label-md text-on-surface">{name}</h3>
-          <span className="bg-surface-container text-on-surface-variant font-caption text-caption px-2 py-1 rounded-md shrink-0 ml-2">
-            {region}
-          </span>
+          <h3 className="font-label-md text-label-md text-on-surface">{post.title}</h3>
+          {post.location && (
+            <span className="bg-surface-container text-on-surface-variant font-caption text-caption px-2 py-1 rounded-md shrink-0 ml-2">
+              {post.location.locationName}
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-1 mb-3">
-          <span className="material-symbols-outlined text-[16px] icon-fill" style={{ color: '#ffb77d' }}>star</span>
-          <span className="font-caption text-caption font-semibold">{rating}</span>
-          <span className="font-caption text-caption text-on-surface-variant">({reviews} đánh giá)</span>
-        </div>
-        <p className="font-body-md text-body-md text-on-surface-variant text-sm line-clamp-2">{description}</p>
+        {avgRating !== null && avgRating !== undefined && (
+          <div className="flex items-center gap-1 mb-3">
+            <span className="material-symbols-outlined text-[16px] icon-fill" style={{ color: '#ffb77d' }}>star</span>
+            <span className="font-caption text-caption font-semibold">{avgRating.toFixed(1)}</span>
+            <span className="font-caption text-caption text-on-surface-variant">({ratingCount} đánh giá)</span>
+          </div>
+        )}
+        <p className="font-body-md text-body-md text-on-surface-variant text-sm line-clamp-2">{post.content}</p>
       </div>
     </Link>
   )
@@ -93,6 +53,14 @@ function LandmarkCard({ id, name, region, rating, reviews, image, description }:
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Home() {
+  const { data: posts = [], isLoading, isError } = useQuery({
+    queryKey: ['posts', 'Publish'],
+    queryFn: () => postsService.fetchPosts({ status: 'Publish' }),
+  })
+
+  const featured = posts[0]
+  const trending = posts.slice(0, 8)
+
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
       <TopNavBar />
@@ -109,43 +77,61 @@ export default function Home() {
           </p>
 
           {/* Featured hero card */}
-          <div className="relative w-full h-[50vh] md:h-[60vh] rounded-xl overflow-hidden card-shadow">
-            <img
-              src={FEATURED.image}
-              alt={FEATURED.name}
-              className="w-full h-full object-cover"
-            />
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#2e3132]/80 via-transparent to-transparent" />
-
-            {/* Text on image */}
-            <div className="absolute bottom-0 left-0 p-8 w-full">
-              <span className="bg-secondary-container text-on-secondary-container font-caption text-caption px-3 py-1 rounded-full mb-3 inline-block font-semibold">
-                Nổi bật
-              </span>
-              <h2 className="font-display text-headline-lg text-white mb-2">{FEATURED.name}</h2>
-              <div className="flex items-center gap-2 text-white/90">
-                <span className="material-symbols-outlined text-[18px] icon-fill" style={{ color: '#ffb77d' }}>star</span>
-                <span className="font-label-md text-label-md">{FEATURED.rating}</span>
-                <span className="font-body-md text-body-md opacity-80">({FEATURED.reviewCount} đánh giá)</span>
+          {featured ? (
+            <Link
+              to={`/landmarks/${featured.postId}`}
+              className="relative w-full h-[50vh] md:h-[60vh] rounded-xl overflow-hidden card-shadow block"
+            >
+              <img
+                src={featured.imageUrl ?? 'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1400&q=80'}
+                alt={featured.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#2e3132]/80 via-transparent to-transparent" />
+              <div className="absolute bottom-0 left-0 p-8 w-full">
+                <span className="bg-secondary-container text-on-secondary-container font-caption text-caption px-3 py-1 rounded-full mb-3 inline-block font-semibold">
+                  Nổi bật
+                </span>
+                <h2 className="font-display text-headline-lg text-white mb-2">{featured.title}</h2>
+                {featured.location && (
+                  <p className="text-white/80 font-body-md text-body-md">{featured.location.locationName}</p>
+                )}
               </div>
+            </Link>
+          ) : (
+            <div className="relative w-full h-[50vh] md:h-[60vh] rounded-xl overflow-hidden card-shadow bg-surface-container flex items-center justify-center">
+              {isLoading ? (
+                <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
+              ) : (
+                <p className="text-on-surface-variant">Chưa có bài viết nào</p>
+              )}
             </div>
-          </div>
+          )}
         </section>
 
         {/* ── Trending Grid ─────────────────────────────────────── */}
         <section className="container-page">
           <div className="flex justify-between items-end mb-8 border-b border-surface-variant pb-4">
             <h2 className="font-display text-headline-md text-on-surface">Điểm đến nổi bật</h2>
-            <button className="font-label-md text-label-md text-secondary flex items-center gap-1 hover:text-secondary-fixed-dim transition-colors">
-              Xem tất cả
-              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-            </button>
           </div>
 
+          {isLoading && (
+            <div className="flex justify-center py-16">
+              <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
+            </div>
+          )}
+
+          {isError && (
+            <p className="text-center py-16 text-on-surface-variant">Không thể tải dữ liệu. Vui lòng thử lại.</p>
+          )}
+
+          {!isLoading && !isError && trending.length === 0 && (
+            <p className="text-center py-16 text-on-surface-variant">Chưa có bài viết nào được xuất bản.</p>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
-            {TRENDING.map(item => (
-              <LandmarkCard key={item.id} {...item} />
+            {trending.map(post => (
+              <PostCard key={post.postId} post={post} />
             ))}
           </div>
         </section>
