@@ -7,12 +7,12 @@ const LandmarkDetail = lazy(() => import('./pages/LandmarkDetail'))
 
 // ── Auth pages ─────────────────────────────────────────────────────
 const Login    = lazy(() => import('./pages/Login'))
-const Register = lazy(() => import('./pages/Register'))
+const Register = lazy(() => import('./pages/Login'))  // TODO: Tạo trang Register riêng
 
 // ── Admin pages ────────────────────────────────────────────────────
 const AdminDashboard      = lazy(() => import('./pages/Admin/Dashboard'))
 const AdminLandmarks      = lazy(() => import('./pages/Admin/Landmarks'))
-const AdminEditLandmark   = lazy(() => import('./pages/Admin/EditLandmark'))
+const AdminEditLandmark   = lazy(() => import('./pages/Admin/Landmarks/EditLandmark'))
 
 // ── 404 ────────────────────────────────────────────────────────────
 const NotFound = lazy(() => import('./pages/NotFound'))
