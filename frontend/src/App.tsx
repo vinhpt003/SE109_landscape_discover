@@ -6,6 +6,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 const Home           = lazy(() => import('./pages/Home'))
 const LandmarkDetail = lazy(() => import('./pages/LandmarkDetail'))
 const SavedPosts     = lazy(() => import('./pages/SavedPosts'))
+const Profile        = lazy(() => import('./pages/Profile'))
 
 // ── Auth pages ─────────────────────────────────────────────────────
 const Login    = lazy(() => import('./pages/Login'))
@@ -46,7 +47,8 @@ export default function App() {
 
           {/* ── Yêu cầu đăng nhập ────────────────────────────── */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/saved" element={<SavedPosts />} />
+            <Route path="/saved"   element={<SavedPosts />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
 
           {/* ── Admin (Admin role only) ───────────────────────── */}

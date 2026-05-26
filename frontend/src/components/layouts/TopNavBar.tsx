@@ -110,6 +110,14 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
                   </div>
                   <div className="py-1">
                     <Link
+                      to="/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors font-label-md text-label-md"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">account_circle</span>
+                      Trang cá nhân
+                    </Link>
+                    <Link
                       to="/saved"
                       onClick={() => setUserMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors font-label-md text-label-md"
@@ -199,6 +207,14 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
                   <p className="font-caption text-caption text-outline truncate">{user.email}</p>
                 </div>
               </div>
+              <Link
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 py-2 px-1 text-on-surface-variant hover:text-primary font-label-md text-label-md"
+              >
+                <span className="material-symbols-outlined text-[18px]">account_circle</span>
+                Trang cá nhân
+              </Link>
               <Link
                 to="/saved"
                 onClick={() => setMenuOpen(false)}
