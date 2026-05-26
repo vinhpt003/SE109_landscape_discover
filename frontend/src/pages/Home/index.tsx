@@ -1,57 +1,23 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
+import { getLandmarks } from '../../services/landmarkService'
+import type { Landmark } from '../../types'
+import { REGION_LABEL } from '../../constants'
 
-// ── Mock data ──────────────────────────────────────────────────────────────
-const FEATURED = {
-  id: 'navagio',
-  name: 'Bãi biển Navagio, Zakynthos',
-  rating: 4.9,
-  reviewCount: 342,
-  image: 'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1400&q=80',
-}
-
-const TRENDING = [
-  {
-    id: '1',
-    name: 'Hoàng Thành Huế',
-    region: 'Miền Trung',
-    rating: 4.8,
-    reviews: 120,
-    image: 'https://images.unsplash.com/photo-1557750255-c76072a7aad1?w=600&q=80',
-    description: 'Di tích lịch sử kinh đô triều Nguyễn, công trình kiến trúc đồ sộ giữa lòng Huế.',
-  },
-  {
-    id: '2',
-    name: 'Vịnh Hạ Long',
-    region: 'Miền Bắc',
-    rating: 4.9,
-    reviews: 845,
-    image: 'https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80',
-    description: 'Kỳ quan thiên nhiên thế giới với hàng nghìn đảo đá vôi phủ rừng xanh.',
-  },
-  {
-    id: '3',
-    name: 'Phố cổ Hội An',
-    region: 'Miền Trung',
-    rating: 4.7,
-    reviews: 630,
-    image: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=600&q=80',
-    description: 'Đô thị cổ giao thương thế kỷ 15–19, được UNESCO công nhận Di sản Thế giới.',
-  },
-  {
-    id: '4',
-    name: 'Mũi Né',
-    region: 'Miền Nam',
-    rating: 4.5,
-    reviews: 290,
-    image: 'https://images.unsplash.com/photo-1585016058010-a285b9756fde?w=600&q=80',
-    description: 'Đồi cát trắng, cát đỏ hùng vĩ giữa nắng biển miền Nam rực rỡ.',
-  },
-]
+// Use backend data: fetch landmarks and derive featured/trending lists
+const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1400&q=80'
 
 // ── Subcomponents ──────────────────────────────────────────────────────────
-function LandmarkCard({ id, name, region, rating, reviews, image, description }: typeof TRENDING[0]) {
+function LandmarkCard({ lm }: { lm: Landmark }) {
+  const id = lm.id
+  const name = lm.title
+  const region = REGION_LABEL[lm.region]
+  const rating = lm.reviews?.length ? (lm.reviews.reduce((s, r) => s + r.rating, 0) / lm.reviews.length).toFixed(1) : '—'
+  const reviews = lm.reviews?.length ?? 0
+  const image = lm.images?.[0]?.url ?? PLACEHOLDER_IMAGE
+  const description = lm.description
   return (
     <Link
       to={`/landmarks/${id}`}
@@ -93,6 +59,31 @@ function LandmarkCard({ id, name, region, rating, reviews, image, description }:
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function Home() {
+  const [landmarks, setLandmarks] = useState<Landmark[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+
+  useEffect(() => {
+    let mounted = true
+    getLandmarks()
+      .then(data => {
+        if (mounted) setLandmarks(data)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+    return () => { mounted = false }
+  }, [])
+
+  const FEATURED = landmarks[0] ? {
+    id: landmarks[0].id,
+    name: landmarks[0].title,
+    rating: landmarks[0].reviews?.length ? (landmarks[0].reviews.reduce((s, r) => s + r.rating, 0) / landmarks[0].reviews.length) : 0,
+    reviewCount: landmarks[0].reviews?.length ?? 0,
+    image: landmarks[0].images?.[0]?.url ?? PLACEHOLDER_IMAGE,
+  } : { id: '0', name: 'Đang tải...', rating: 0, reviewCount: 0, image: PLACEHOLDER_IMAGE }
+
+  const TRENDING = landmarks.slice(0, 12)
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
       <TopNavBar />
@@ -144,8 +135,9 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
-            {TRENDING.map(item => (
-              <LandmarkCard key={item.id} {...item} />
+            {/** Render landmarks fetched from backend */}
+            {TRENDING.map(lm => (
+              <LandmarkCard key={lm.id} lm={lm} />
             ))}
           </div>
         </section>

@@ -1,75 +1,58 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
+import { getLandmarks } from '../../../services/landmarkService'
+import httpClient from '../../../services/httpClient'
+import type { Landmark } from '../../../types'
+import { REGION_LABEL } from '../../../constants'
 
-// ── Mock data ──────────────────────────────────────────────────────────────
-const KPI_CARDS = [
-  {
-    icon: 'landscape',
-    iconBg: 'bg-primary-fixed',
-    iconColor: 'text-primary',
-    label: 'Tổng số danh lam',
-    value: '1,482',
-    badge: { text: '12%', type: 'positive' },
-  },
-  {
-    icon: 'rate_review',
-    iconBg: 'bg-[#fff0e6]',
-    iconColor: 'text-[#e35d5b]',
-    label: 'Đánh giá chờ duyệt',
-    value: '56',
-    badge: { text: 'Cần xử lý', type: 'warning' },
-  },
-  {
-    icon: 'group',
-    iconBg: 'bg-[#e0f2f1]',
-    iconColor: 'text-secondary',
-    label: 'Người dùng hoạt động (30 ngày)',
-    value: '12,405',
-    badge: { text: '4.3%', type: 'positive' },
-  },
-]
-
-const CHART_BARS = [
-  { label: 'Bắc',    height: '80%', color: '#004581', value: 400 },
-  { label: 'Trung',  height: '45%', color: '#006a64', value: 225 },
-  { label: 'Nam',    height: '60%', color: '#e35d5b', value: 300 },
-  { label: 'Đảo',   height: '30%', color: '#075fac', value: 150 },
-]
-
-const ACTIVITIES = [
-  {
-    icon: 'person_add',
-    iconBg: 'bg-[#e6f4ea]',
-    iconColor: 'text-secondary',
-    text: <><span className="font-semibold">Nguyễn Thị Lan</span> đã đăng ký tài khoản mới.</>,
-    time: '10 phút trước',
-  },
-  {
-    icon: 'rate_review',
-    iconBg: 'bg-[#fff0e6]',
-    iconColor: 'text-[#e35d5b]',
-    text: <><span className="font-semibold">Trần Minh T.</span> đã gửi đánh giá về <span className="text-primary cursor-pointer hover:underline">Vịnh Hạ Long</span>.</>,
-    time: '45 phút trước',
-  },
-  {
-    icon: 'add_location',
-    iconBg: 'bg-primary-fixed',
-    iconColor: 'text-primary',
-    text: <><span className="font-semibold">Admin (Auto)</span> đã nhập 12 danh lam mới ở <span className="font-semibold">Miền Trung</span>.</>,
-    time: '2 giờ trước',
-  },
-  {
-    icon: 'image',
-    iconBg: 'bg-surface-container-low',
-    iconColor: 'text-on-surface-variant',
-    text: <>5 ảnh chờ đã được duyệt cho <span className="text-primary cursor-pointer hover:underline">Hoàng Thành Huế</span>.</>,
-    time: '3 giờ trước',
-  },
-]
+// We'll derive KPI/chart/activity data from backend endpoints
+// Fallbacks are used when backend data is not available.
+const DEFAULT_BAR_COLORS = ['#004581', '#006a64', '#e35d5b', '#075fac']
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
+  const [kpiCards, setKpiCards] = useState<any[]>([])
+  const [chartBars, setChartBars] = useState<any[]>([])
+  const [activities, setActivities] = useState<any[]>([])
+
+  useEffect(() => {
+    let mounted = true
+    Promise.all([getLandmarks(), httpClient.get('/users').then(r => r.data).catch(() => [])])
+      .then(([lands, users]) => {
+        if (!mounted) return
+
+        const total = lands.length
+        const pending = lands.filter((l: Landmark) => l.status === 'PENDING').length
+        const activeUsers = users.length ?? 0
+
+        setKpiCards([
+          { icon: 'landscape', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', label: 'Tổng số danh lam', value: total.toLocaleString(), badge: { text: '', type: 'neutral' } },
+          { icon: 'rate_review', iconBg: 'bg-[#fff0e6]', iconColor: 'text-[#e35d5b]', label: 'Danh lam chờ duyệt', value: pending.toString(), badge: { text: 'Cần xử lý', type: 'warning' } },
+          { icon: 'group', iconBg: 'bg-[#e0f2f1]', iconColor: 'text-secondary', label: 'Người dùng', value: activeUsers.toLocaleString(), badge: { text: '', type: 'neutral' } },
+        ])
+
+        // Chart by region
+        const regions = ['MIEN_BAC', 'MIEN_TRUNG', 'MIEN_NAM']
+        const counts = regions.map(r => lands.filter((l: Landmark) => l.region === r).length)
+        const max = Math.max(...counts, 1)
+        const bars = regions.map((r, i) => ({ label: REGION_LABEL[r as keyof typeof REGION_LABEL], height: `${Math.round((counts[i] / max) * 100)}%`, color: DEFAULT_BAR_COLORS[i] ?? '#999', value: counts[i] }))
+        setChartBars(bars)
+
+        // Activities: derive simple recent items from landmarks
+        const acts = lands.slice(0, 6).map((l: Landmark, i: number) => ({
+          icon: 'add_location',
+          iconBg: 'bg-primary-fixed',
+          iconColor: 'text-primary',
+          text: <><span className="font-semibold">{l.title}</span> đã được thêm.</>,
+          time: new Date(l.createdAt).toLocaleString(),
+        }))
+        setActivities(acts)
+      })
+      .catch(() => {})
+    return () => { mounted = false }
+  }, [])
   return (
     <div className="bg-surface min-h-screen flex">
       <AdminSideNav />
@@ -93,7 +76,7 @@ export default function AdminDashboard() {
 
             {/* KPI cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {KPI_CARDS.map((card, i) => (
+              {kpiCards.map((card, i) => (
                 <div
                   key={i}
                   className="bg-surface-container-lowest rounded-xl p-6 card-shadow hover:-translate-y-1 transition-all duration-300 border border-surface-container"
@@ -138,7 +121,7 @@ export default function AdminDashboard() {
                     <span>250</span>
                     <span>0</span>
                   </div>
-                  {CHART_BARS.map(bar => (
+                  {chartBars.map(bar => (
                     <div
                       key={bar.label}
                       className="relative w-16 rounded-t-md hover:opacity-90 transition-opacity group flex items-end justify-center"
@@ -151,7 +134,7 @@ export default function AdminDashboard() {
                   ))}
                 </div>
                 <div className="flex justify-around mt-4 font-caption text-caption text-on-surface-variant pl-8">
-                  {CHART_BARS.map(b => <span key={b.label}>{b.label}</span>)}
+                  {chartBars.map(b => <span key={b.label}>{b.label}</span>)}
                 </div>
               </div>
 
@@ -165,7 +148,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-6 flex-1 overflow-y-auto">
-                  {ACTIVITIES.map((act, i) => (
+                  {activities.map((act, i) => (
                     <div key={i} className="flex gap-4 items-start">
                       <div className={`w-8 h-8 rounded-full ${act.iconBg} flex items-center justify-center ${act.iconColor} shrink-0 mt-1`}>
                         <span className="material-symbols-outlined text-[16px]">{act.icon}</span>

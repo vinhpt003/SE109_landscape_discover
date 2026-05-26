@@ -1,54 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
+import { getLandmarkById } from '../../services/landmarkService'
+import type { Landmark, Review } from '../../types'
 
-// ── Mock data ──────────────────────────────────────────────────────────────
-const MOCK_LANDMARK = {
-  id: '1',
-  name: 'Hoàng Thành Huế',
-  location: 'Khu phố cổ, Miền Trung',
-  rating: 4.8,
-  reviewCount: 2400,
-  status: 'Đang mở cửa',
-  hours: '8:00 SA - 6:00 CH',
-  bestTime: 'Sáng sớm',
-  description:
-    'Một kỳ quan công trình cổ đại, Hoàng Thành Huế là minh chứng cho tài năng kiến trúc của thời kỳ hoàng kim. Đứng trên đỉnh cao của thung lũng, nơi đây cung cấp tầm nhìn toàn cảnh tuyệt đẹp đã bảo vệ vùng đất này suốt nhiều thế kỷ.',
-  significance: 'Công trình thế kỷ 19 đại diện cho đỉnh cao kiến trúc kinh đô triều Nguyễn.',
-  images: [
-    'https://images.unsplash.com/photo-1557750255-c76072a7aad1?w=900&q=80',
-    'https://images.unsplash.com/photo-1557750221-5350ef7e7d35?w=600&q=80',
-    'https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80',
-    'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=900&q=80',
-  ],
+// UI review shape mapped from backend Review
+type UiReview = {
+  id: number | string
+  author: string
+  initials: string
+  date: string
+  rating: number
+  text: string
+  photos: string[]
+  likes: number
 }
-
-const MOCK_REVIEWS = [
-  {
-    id: '1',
-    author: 'Nguyễn Thị Mai',
-    initials: 'NM',
-    date: '2 ngày trước',
-    rating: 5,
-    text: 'Ánh sáng buổi sáng ở đây thật sự tuyệt vời. Thức dậy lúc 5 giờ sáng để đón bình minh trên những công trình cổ đại — hoàn toàn xứng đáng. Không khí yên tĩnh và thanh bình đến lạ.',
-    photos: [
-      'https://images.unsplash.com/photo-1557750255-c76072a7aad1?w=400&q=80',
-      'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=400&q=80',
-    ],
-    likes: 24,
-  },
-  {
-    id: '2',
-    author: 'Trần Minh Anh',
-    initials: 'MA',
-    date: '5 giờ trước',
-    rating: 4,
-    text: 'Kiến trúc ấn tượng. Đường đi lên hơi vất vả nhưng tầm nhìn từ trên xuống xứng đáng từng bước chân. Nhớ mang theo đủ nước!',
-    photos: [],
-    likes: 12,
-  },
-]
 
 // ── Star rating component ──────────────────────────────────────────────────
 function StarRating({ value, max = 5 }: { value: number; max?: number }) {
@@ -68,7 +35,7 @@ function StarRating({ value, max = 5 }: { value: number; max?: number }) {
 }
 
 // ── Review card ────────────────────────────────────────────────────────────
-function ReviewCard({ review }: { review: typeof MOCK_REVIEWS[0] }) {
+function ReviewCard({ review }: { review: UiReview }) {
   const [liked, setLiked] = useState(false)
 
   return (
@@ -122,8 +89,33 @@ function ReviewCard({ review }: { review: typeof MOCK_REVIEWS[0] }) {
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function LandmarkDetail() {
   const { id } = useParams()
-  // TODO: fetch landmark by id — dùng mock data tạm
-  const lm = MOCK_LANDMARK
+  const [lm, setLm] = useState<Landmark | null>(null)
+  const [reviews, setReviews] = useState<UiReview[]>([])
+
+  useEffect(() => {
+    if (!id) return
+    const nid = Number(id)
+    getLandmarkById(nid)
+      .then(data => {
+        setLm(data)
+        const mapped: UiReview[] = (data.reviews ?? []).map((r: Review) => {
+          const author = r.user?.fullName ?? 'Người dùng'
+          const initials = author.split(' ').map(s => s[0]).slice(0,2).join('').toUpperCase()
+          return {
+            id: r.id,
+            author,
+            initials,
+            date: new Date(r.createdAt).toLocaleDateString(),
+            rating: r.rating,
+            text: r.comment,
+            photos: [],
+            likes: r.usefulVotes ?? 0,
+          }
+        })
+        setReviews(mapped)
+      })
+      .catch(() => {})
+  }, [id])
 
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
@@ -135,7 +127,7 @@ export default function LandmarkDetail() {
         <section className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-4 h-[400px] md:h-[560px] rounded-xl overflow-hidden card-shadow">
           {/* Main large image */}
           <div className="col-span-1 md:col-span-2 row-span-2 relative">
-            <img src={lm.images[0]} alt={lm.name} className="w-full h-full object-cover" />
+            <img src={lm?.images?.[0]?.url ?? ''} alt={lm?.title ?? ''} className="w-full h-full object-cover" />
           </div>
           {/* Small top-right */}
           <div className="col-span-1 row-span-1 relative hidden md:block">
@@ -157,34 +149,34 @@ export default function LandmarkDetail() {
           <div className="flex-1 flex flex-col gap-6 bg-surface-container-lowest p-6 md:p-8 rounded-xl card-shadow border border-surface-container-low">
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-start flex-wrap gap-2">
-                <h1 className="font-display text-display-lg text-on-surface">{lm.name}</h1>
+                <h1 className="font-display text-display-lg text-on-surface">{lm?.title ?? '—'}</h1>
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full font-caption text-caption">
                   <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                  {lm.status}
+                  {lm?.status ?? '—'}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-4 text-on-surface-variant font-body-md text-body-md">
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-[20px]">location_on</span>
-                  {lm.location}
+                  {lm?.province ?? '—'}
                 </span>
                 <span className="flex items-center gap-1 text-primary">
                   <span className="material-symbols-outlined text-[20px] icon-fill">star</span>
-                  {lm.rating} ({lm.reviewCount.toLocaleString()} đánh giá)
+                  {lm ? (lm.reviews?.length ? (lm.reviews.reduce((s, r) => s + r.rating, 0) / lm.reviews.length).toFixed(1) : '—') : '—'} ({lm?.reviews?.length ?? 0} đánh giá)
                 </span>
               </div>
             </div>
-
+            
             <p className="font-sans text-body-lg text-on-surface-variant leading-relaxed">
-              {lm.description}
+              {lm?.description ?? '—'}
             </p>
 
             <div className="border-t border-surface-variant pt-6">
-              <h2 className="font-display text-headline-md text-on-surface mb-3">
+                <h2 className="font-display text-headline-md text-on-surface mb-3">
                 Ý nghĩa lịch sử & văn hóa
               </h2>
               <p className="font-sans text-body-md text-on-surface-variant leading-relaxed">
-                {lm.significance}
+                {lm?.content ?? '—'}
               </p>
             </div>
           </div>
@@ -242,7 +234,7 @@ export default function LandmarkDetail() {
 
           {/* Review list */}
           <div className="flex flex-col gap-6">
-            {MOCK_REVIEWS.map(review => (
+            {reviews.map(review => (
               <ReviewCard key={review.id} review={review} />
             ))}
           </div>

@@ -1,50 +1,38 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
+import { getLandmarks } from '../../../services/landmarkService'
+import type { Landmark as ApiLandmark } from '../../../types'
+import { REGION_LABEL } from '../../../constants'
 
-// ── Types ──────────────────────────────────────────────────────────────────
-type StatusType = 'Published' | 'Draft' | 'Needs Verification'
-
-interface Landmark {
+type RowItem = {
   id: string
   code: string
   name: string
   region: string
   rating: number | null
-  status: StatusType
+  status: string
   thumbnail?: string
 }
 
-// ── Mock data ──────────────────────────────────────────────────────────────
-const MOCK_LANDMARKS: Landmark[] = [
-  { id: '1', code: '#LND-001', name: 'Hoàng Thành Huế',    region: 'Miền Trung', rating: 4.8, status: 'Published',
-    thumbnail: 'https://images.unsplash.com/photo-1557750255-c76072a7aad1?w=200&q=70' },
-  { id: '2', code: '#LND-002', name: 'Vịnh Hạ Long',      region: 'Miền Bắc',   rating: 4.9, status: 'Published',
-    thumbnail: 'https://images.unsplash.com/photo-1528127269322-539801943592?w=200&q=70' },
-  { id: '3', code: '#LND-003', name: 'Phố cổ Hội An',     region: 'Miền Trung', rating: null, status: 'Draft',
-    thumbnail: undefined },
-  { id: '4', code: '#LND-004', name: 'Mũi Né',            region: 'Miền Nam',   rating: 4.5, status: 'Needs Verification',
-    thumbnail: 'https://images.unsplash.com/photo-1585016058010-a285b9756fde?w=200&q=70' },
-]
-
-// ── Badge component ────────────────────────────────────────────────────────
-const STATUS_STYLE: Record<StatusType, string> = {
-  'Published':         'bg-secondary-container text-on-secondary-container',
-  'Draft':             'bg-surface-variant text-on-surface-variant',
-  'Needs Verification':'bg-tertiary-fixed text-on-tertiary-fixed-variant',
+// ── Badge component (map backend status enums to UI)
+const STATUS_STYLE: Record<string, string> = {
+  PUBLISHED: 'bg-secondary-container text-on-secondary-container',
+  ARCHIVED: 'bg-surface-variant text-on-surface-variant',
+  PENDING:  'bg-tertiary-fixed text-on-tertiary-fixed-variant',
 }
 
-const STATUS_LABEL: Record<StatusType, string> = {
-  'Published':         'Đã xuất bản',
-  'Draft':             'Nháp',
-  'Needs Verification':'Cần kiểm duyệt',
+const STATUS_LABEL: Record<string, string> = {
+  PUBLISHED: 'Đã xuất bản',
+  ARCHIVED:  'Nháp',
+  PENDING:   'Cần kiểm duyệt',
 }
 
-function StatusBadge({ status }: { status: StatusType }) {
+function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-caption text-caption font-semibold ${STATUS_STYLE[status]}`}>
-      {STATUS_LABEL[status]}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-caption text-caption font-semibold ${STATUS_STYLE[status] ?? ''}`}>
+      {STATUS_LABEL[status] ?? status}
     </span>
   )
 }
@@ -56,6 +44,27 @@ export default function AdminLandmarks() {
   const [search, setSearch] = useState('')
   const [regionFilter, setRegionFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [rows, setRows] = useState<RowItem[]>([])
+
+  useEffect(() => {
+    let mounted = true
+    getLandmarks()
+      .then(data => {
+        if (!mounted) return
+        const mapped: RowItem[] = data.map((l: ApiLandmark) => ({
+          id: String(l.id),
+          code: `#LND-${String(l.id).padStart(3, '0')}`,
+          name: l.title,
+          region: REGION_LABEL[l.region],
+          rating: l.reviews?.length ? +(l.reviews.reduce((s, r) => s + r.rating, 0) / l.reviews.length).toFixed(1) : null,
+          status: l.status,
+          thumbnail: l.images?.[0]?.url,
+        }))
+        setRows(mapped)
+      })
+      .catch(() => {})
+    return () => { mounted = false }
+  }, [])
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -69,7 +78,7 @@ export default function AdminLandmarks() {
     setSelected(prev => prev.size === filtered.length ? new Set() : new Set(filtered.map(l => l.id)))
   }
 
-  const filtered = MOCK_LANDMARKS.filter(l => {
+  const filtered = rows.filter(l => {
     const matchSearch = l.name.toLowerCase().includes(search.toLowerCase())
     const matchRegion = !regionFilter || l.region === regionFilter
     const matchStatus = !statusFilter || l.status === statusFilter
@@ -135,9 +144,9 @@ export default function AdminLandmarks() {
                   className="bg-surface-container-low border border-outline-variant rounded-lg py-2.5 px-4 text-on-surface font-body-md text-body-md focus:ring-1 focus:ring-secondary focus:outline-none"
                 >
                   <option value="">Tất cả trạng thái</option>
-                  <option value="Published">Đã xuất bản</option>
-                  <option value="Draft">Nháp</option>
-                  <option value="Needs Verification">Cần kiểm duyệt</option>
+                  <option value="PUBLISHED">Đã xuất bản</option>
+                  <option value="ARCHIVED">Nháp</option>
+                  <option value="PENDING">Cần kiểm duyệt</option>
                 </select>
 
                 <button className="bg-surface-container text-on-surface px-4 py-2.5 rounded-lg border border-outline-variant font-label-md text-label-md hover:bg-surface-container-high transition-colors flex items-center gap-2">
@@ -255,7 +264,7 @@ export default function AdminLandmarks() {
               {/* Pagination */}
               <div className="bg-surface-bright border-t border-outline-variant py-3 px-6 flex items-center justify-between">
                 <span className="font-body-md text-body-md text-on-surface-variant">
-                  Hiển thị 1–{filtered.length} trong tổng số {MOCK_LANDMARKS.length} mục
+                  Hiển thị 1–{filtered.length} trong tổng số {rows.length} mục
                 </span>
                 <div className="flex items-center gap-1">
                   <button className="p-1 rounded hover:bg-surface-container-low text-outline disabled:opacity-40" disabled>
