@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
+import { getLandmarks } from '../../../services/landmarkService'
+import type { Landmark, Review } from '../../../types'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ItemType = 'review' | 'landmark' | 'photo'
@@ -19,64 +21,16 @@ interface VerificationItem {
   landmark?: string
 }
 
-// ── Mock data ──────────────────────────────────────────────────────────────
-const MOCK_ITEMS: VerificationItem[] = [
-  {
-    id: '1',
-    type: 'review',
-    title: 'Đánh giá về Vịnh Hạ Long',
-    submittedBy: 'Nguyễn Thị Mai',
-    submittedAt: '10 phút trước',
-    status: 'pending',
-    rating: 5,
-    landmark: 'Vịnh Hạ Long',
-    content:
-      'Ánh sáng buổi sáng ở đây thật sự tuyệt vời. Thức dậy lúc 5 giờ sáng để đón bình minh — hoàn toàn xứng đáng. Không khí yên tĩnh và thanh bình.',
-  },
-  {
-    id: '2',
-    type: 'photo',
-    title: 'Ảnh tải lên: Hoàng Thành Huế',
-    submittedBy: 'Trần Minh Anh',
-    submittedAt: '1 giờ trước',
-    status: 'pending',
-    landmark: 'Hoàng Thành Huế',
-    preview:
-      'https://images.unsplash.com/photo-1557750255-c76072a7aad1?w=400&q=70',
-  },
-  {
-    id: '3',
-    type: 'landmark',
-    title: 'Đề xuất địa điểm: Cầu Vàng Đà Nẵng',
-    submittedBy: 'Lê Hoàng Nam',
-    submittedAt: '3 giờ trước',
-    status: 'pending',
-    content:
-      'Cầu Vàng nằm trên đỉnh Bà Nà Hills, được đỡ bởi hai bàn tay khổng lồ bằng đá, trở thành biểu tượng du lịch nổi tiếng thế giới từ năm 2018.',
-  },
-  {
-    id: '4',
-    type: 'review',
-    title: 'Đánh giá về Phố cổ Hội An',
-    submittedBy: 'Phạm Thu Hương',
-    submittedAt: '5 giờ trước',
-    status: 'approved',
-    rating: 4,
-    landmark: 'Phố cổ Hội An',
-    content: 'Hội An về đêm rất đẹp, đèn lồng rực rỡ. Nên đến vào dịp Rằm.',
-  },
-  {
-    id: '5',
-    type: 'photo',
-    title: 'Ảnh tải lên: Mũi Né',
-    submittedBy: 'Võ Quốc Bảo',
-    submittedAt: 'Hôm qua',
-    status: 'rejected',
-    landmark: 'Mũi Né',
-    preview:
-      'https://images.unsplash.com/photo-1585016058010-a285b9756fde?w=400&q=70',
-  },
-]
+// We'll derive verification items from backend when possible.
+const FALLBACK_SUGGESTION = {
+  id: 'sugg-1',
+  type: 'landmark' as const,
+  title: 'Đề xuất địa điểm: Cầu Vàng Đà Nẵng',
+  submittedBy: 'Người dùng',
+  submittedAt: new Date().toLocaleString(),
+  status: 'pending' as const,
+  content: 'Cầu Vàng nằm trên đỉnh Bà Nà Hills...',
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const TYPE_CONFIG: Record<ItemType, { label: string; icon: string; color: string }> = {
@@ -193,9 +147,56 @@ function ItemCard({
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function AdminVerification() {
-  const [items, setItems] = useState<VerificationItem[]>(MOCK_ITEMS)
+  const [items, setItems] = useState<VerificationItem[]>([])
   const [activeTab, setActiveTab] = useState<ItemStatus | 'all'>('all')
   const [typeFilter, setTypeFilter] = useState<ItemType | ''>('')
+
+  useEffect(() => {
+    let mounted = true
+    getLandmarks()
+      .then((lands: Landmark[]) => {
+        if (!mounted) return
+        const fromReviews: VerificationItem[] = []
+        const fromPhotos: VerificationItem[] = []
+
+        lands.forEach(l => {
+          (l.reviews ?? []).forEach((r: Review) => {
+            fromReviews.push({
+              id: `rev-${r.id}`,
+              type: 'review',
+              title: `Đánh giá về ${l.title}`,
+              submittedBy: r.user?.fullName ?? 'Người dùng',
+              submittedAt: new Date(r.createdAt).toLocaleString(),
+              status: 'pending',
+              rating: r.rating,
+              landmark: l.title,
+              content: r.comment,
+            })
+          })
+
+          (l.images ?? []).forEach((m, i) => {
+            fromPhotos.push({
+              id: `img-${l.id}-${i}`,
+              type: 'photo',
+              title: `Ảnh tải lên: ${l.title}`,
+              submittedBy: 'Người dùng',
+              submittedAt: new Date(l.createdAt).toLocaleString(),
+              status: 'pending',
+              landmark: l.title,
+              preview: m.url,
+            })
+          })
+        })
+
+        const combined = [...fromReviews, ...fromPhotos, FALLBACK_SUGGESTION]
+        setItems(combined)
+      })
+      .catch(() => {
+        setItems([FALLBACK_SUGGESTION])
+      })
+
+    return () => { mounted = false }
+  }, [])
 
   const handleApprove = (id: string) =>
     setItems(prev => prev.map(i => (i.id === id ? { ...i, status: 'approved' } : i)))
