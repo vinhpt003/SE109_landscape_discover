@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { savedPostsService } from '../../services/saved-posts.service'
+import { useAuthStore } from '../../store/authStore'
 
-// ── Types ──────────────────────────────────────────────────────────────────
 export interface LandmarkCardProps {
   id: string | number
   name: string
@@ -11,15 +12,11 @@ export interface LandmarkCardProps {
   image: string
   description: string
   isFeatured?: boolean
-  /** Optional: show verified badge */
   isVerified?: boolean
-  /** Callback when favorite toggled */
-  onFavoriteToggle?: (id: string | number, value: boolean) => void
-  /** External className override */
+  initialSaved?: boolean
   className?: string
 }
 
-// ── Region color map ───────────────────────────────────────────────────────
 const REGION_STYLE: Record<string, { bg: string; text: string }> = {
   'Miền Bắc': { bg: 'bg-primary-fixed',    text: 'text-on-primary-fixed' },
   'north':    { bg: 'bg-primary-fixed',    text: 'text-on-primary-fixed' },
@@ -29,7 +26,6 @@ const REGION_STYLE: Record<string, { bg: string; text: string }> = {
   'south':    { bg: 'bg-tertiary-fixed',   text: 'text-on-tertiary-fixed' },
 }
 
-// ── Component ──────────────────────────────────────────────────────────────
 export default function LandmarkCard({
   id,
   name,
@@ -40,17 +36,31 @@ export default function LandmarkCard({
   description,
   isFeatured = false,
   isVerified = false,
-  onFavoriteToggle,
+  initialSaved = false,
   className = '',
 }: LandmarkCardProps) {
-  const [favorited, setFavorited] = useState(false)
+  const navigate = useNavigate()
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated)
+  const [saved, setSaved] = useState(initialSaved)
+  const [toggling, setToggling] = useState(false)
 
-  const handleFavorite = (e: React.MouseEvent) => {
+  const handleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    const next = !favorited
-    setFavorited(next)
-    onFavoriteToggle?.(id, next)
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    if (toggling) return
+    setToggling(true)
+    try {
+      const result = await savedPostsService.toggle(String(id))
+      setSaved(result.saved)
+    } catch {
+      // silent — state stays unchanged
+    } finally {
+      setToggling(false)
+    }
   }
 
   const regionStyle = REGION_STYLE[region] ?? { bg: 'bg-surface-container', text: 'text-on-surface-variant' }
@@ -75,10 +85,8 @@ export default function LandmarkCard({
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
 
-        {/* Gradient overlay for badges */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 
-        {/* Top badges row */}
         <div className="absolute top-3 left-3 flex gap-2">
           {isFeatured && (
             <span className="bg-secondary-container text-on-secondary-container font-caption text-caption px-2.5 py-0.5 rounded-full font-semibold">
@@ -96,17 +104,18 @@ export default function LandmarkCard({
         {/* Favorite button */}
         <button
           onClick={handleFavorite}
-          aria-label={favorited ? 'Bỏ yêu thích' : 'Thêm yêu thích'}
+          aria-label={saved ? 'Bỏ yêu thích' : 'Thêm yêu thích'}
+          disabled={toggling}
           className={[
             'absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center',
             'bg-surface-container-lowest/80 backdrop-blur-sm transition-all duration-200',
-            'hover:scale-110 active:scale-95',
-            favorited ? 'text-error' : 'text-on-surface-variant hover:text-error',
+            'hover:scale-110 active:scale-95 disabled:opacity-60',
+            saved ? 'text-error' : 'text-on-surface-variant hover:text-error',
           ].join(' ')}
         >
           <span
             className="material-symbols-outlined text-[18px]"
-            style={{ fontVariationSettings: favorited ? "'FILL' 1" : "'FILL' 0" }}
+            style={{ fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}
           >
             favorite
           </span>
@@ -115,7 +124,6 @@ export default function LandmarkCard({
 
       {/* ── Info ────────────────────────────────────────────────── */}
       <div className="p-5">
-        {/* Name + Region */}
         <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="font-label-md text-label-md text-on-surface leading-snug line-clamp-2 flex-1">
             {name}
@@ -131,7 +139,6 @@ export default function LandmarkCard({
           </span>
         </div>
 
-        {/* Rating */}
         <div className="flex items-center gap-1.5 mb-3">
           <span
             className="material-symbols-outlined text-[16px]"
@@ -147,12 +154,10 @@ export default function LandmarkCard({
           </span>
         </div>
 
-        {/* Description */}
         <p className="font-body-md text-body-md text-on-surface-variant text-sm line-clamp-2 leading-relaxed">
           {description}
         </p>
 
-        {/* Footer CTA */}
         <div className="mt-4 pt-3 border-t border-surface-container flex items-center justify-between">
           <span className="font-caption text-caption text-outline flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">location_on</span>

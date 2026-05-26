@@ -1,14 +1,41 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
 import { postsService } from '../../services/posts.service'
+import { savedPostsService } from '../../services/saved-posts.service'
+import { useAuthStore } from '../../store/authStore'
 import type { Post } from '../../types'
 
 // ── Subcomponent ───────────────────────────────────────────────────────────
 function PostCard({ post }: { post: Post }) {
+  const navigate = useNavigate()
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated)
+  const [saved, setSaved] = useState(false)
+  const [toggling, setToggling] = useState(false)
+
   const avgRating = post.avgRating ?? (post._count?.ratings ? null : null)
   const ratingCount = post._count?.ratings ?? 0
+
+  const handleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    if (toggling) return
+    setToggling(true)
+    try {
+      const result = await savedPostsService.toggle(post.postId)
+      setSaved(result.saved)
+    } catch {
+      // silent
+    } finally {
+      setToggling(false)
+    }
+  }
 
   return (
     <Link
@@ -22,10 +49,21 @@ function PostCard({ post }: { post: Post }) {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <button
-          className="absolute top-4 right-4 h-8 w-8 bg-surface-container-lowest/80 backdrop-blur-sm rounded-full flex items-center justify-center text-on-surface-variant hover:text-error transition-colors"
-          onClick={e => e.preventDefault()}
+          onClick={handleFavorite}
+          disabled={toggling}
+          aria-label={saved ? 'Bỏ yêu thích' : 'Thêm yêu thích'}
+          className={[
+            'absolute top-4 right-4 h-8 w-8 bg-surface-container-lowest/80 backdrop-blur-sm rounded-full',
+            'flex items-center justify-center transition-colors disabled:opacity-60',
+            saved ? 'text-error' : 'text-on-surface-variant hover:text-error',
+          ].join(' ')}
         >
-          <span className="material-symbols-outlined text-[20px]">favorite</span>
+          <span
+            className="material-symbols-outlined text-[20px]"
+            style={{ fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}
+          >
+            favorite
+          </span>
         </button>
       </div>
 
