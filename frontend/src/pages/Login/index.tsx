@@ -2,28 +2,32 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authService } from '../../services/auth.service'
 import { useAuthStore } from '../../store/authStore'
+import { useToast } from '../../hooks/useToast'
+import Toaster from '../../components/ui/Toaster'
 
 export default function Login() {
   const navigate = useNavigate()
   const login = useAuthStore(s => s.login)
+  const { toasts, toast, dismiss } = useToast()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async () => {
     if (!identifier || !password) {
-      setError('Vui lòng nhập đầy đủ thông tin')
+      toast('Vui lòng nhập đầy đủ thông tin', 'error')
       return
     }
-    setError('')
     setLoading(true)
     try {
       const { user, access_token } = await authService.login(identifier, password)
       login(user, access_token)
-      navigate(user.role === 'Admin' || user.role === 'Editor' ? '/admin' : '/')
+      toast('Đăng nhập thành công!', 'success', 1500)
+      setTimeout(() => {
+        navigate(user.role === 'Admin' || user.role === 'Editor' ? '/admin' : '/')
+      }, 800)
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Đăng nhập thất bại')
+      toast(err?.response?.data?.message ?? 'Đăng nhập thất bại', 'error')
     } finally {
       setLoading(false)
     }
@@ -31,6 +35,8 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-margin-mobile">
+      <Toaster toasts={toasts} onDismiss={dismiss} />
+
       <div className="w-full max-w-md bg-surface-container-lowest rounded-xl p-10 card-shadow border border-surface-container-low">
 
         {/* Logo */}
@@ -45,12 +51,6 @@ export default function Login() {
         <p className="font-sans text-body-md text-on-surface-variant mb-8">
           Chào mừng trở lại! Nhập thông tin của bạn để tiếp tục.
         </p>
-
-        {error && (
-          <div className="bg-error-container text-on-error-container px-4 py-3 rounded-lg font-body-md text-body-md mb-4">
-            {error}
-          </div>
-        )}
 
         <div className="flex flex-col gap-5">
           <div>

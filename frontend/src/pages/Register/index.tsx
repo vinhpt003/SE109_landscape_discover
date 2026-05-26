@@ -2,38 +2,40 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authService } from '../../services/auth.service'
 import { useAuthStore } from '../../store/authStore'
+import { useToast } from '../../hooks/useToast'
+import Toaster from '../../components/ui/Toaster'
 
 export default function Register() {
   const navigate = useNavigate()
   const login = useAuthStore(s => s.login)
+  const { toasts, toast, dismiss } = useToast()
   const [userName, setUserName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async () => {
     if (!userName.trim() || !email.trim() || !password || !confirmPassword) {
-      setError('Vui lòng nhập đầy đủ thông tin')
+      toast('Vui lòng nhập đầy đủ thông tin', 'error')
       return
     }
     if (password !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp')
+      toast('Mật khẩu xác nhận không khớp', 'error')
       return
     }
     if (password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự')
+      toast('Mật khẩu phải có ít nhất 6 ký tự', 'error')
       return
     }
-    setError('')
     setLoading(true)
     try {
       const { user, access_token } = await authService.register(userName.trim(), email.trim(), password)
       login(user, access_token)
-      navigate('/')
+      toast('Tạo tài khoản thành công!', 'success', 1500)
+      setTimeout(() => navigate('/'), 800)
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Đăng ký thất bại')
+      toast(err?.response?.data?.message ?? 'Đăng ký thất bại', 'error')
     } finally {
       setLoading(false)
     }
@@ -41,6 +43,8 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-margin-mobile">
+      <Toaster toasts={toasts} onDismiss={dismiss} />
+
       <div className="w-full max-w-md bg-surface-container-lowest rounded-xl p-10 card-shadow border border-surface-container-low">
 
         {/* Logo */}
@@ -55,12 +59,6 @@ export default function Register() {
         <p className="font-sans text-body-md text-on-surface-variant mb-8">
           Tham gia cộng đồng du lịch và khám phá địa danh Việt Nam.
         </p>
-
-        {error && (
-          <div className="bg-error-container text-on-error-container px-4 py-3 rounded-lg font-body-md text-body-md mb-4">
-            {error}
-          </div>
-        )}
 
         <div className="flex flex-col gap-5">
           <div>
