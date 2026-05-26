@@ -342,6 +342,15 @@
   }
 }
 
+/* ── Hide scrollbar (dùng cho carousel ngang) ────────────────────── */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Toast animation ──────────────────────────────────────────────── */
 @keyframes fadeSlideIn {
   from {
