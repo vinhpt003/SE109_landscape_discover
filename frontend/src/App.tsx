@@ -1,59 +1,45 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// ── User-facing pages ──────────────────────────────────────────────
-const Home           = lazy(() => import('./pages/Home'))
-const LandmarkDetail = lazy(() => import('./pages/LandmarkDetail'))
+// Public pages
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import LandmarkDetail from "./pages/LandmarkDetail";
+import NotFound from "./pages/NotFound";
 
-// ── Auth pages ─────────────────────────────────────────────────────
-const Login    = lazy(() => import('./pages/Login'))
-const Register = lazy(() => import('./pages/Register'))
+// Admin pages
+import Dashboard from "./pages/Admin/Dashboard";
+import Landmarks from "./pages/Admin/Landmarks";
+import EditLandmark from "./pages/Admin/Landmarks/EditLandmark";
+import Verification from "./pages/Admin/Verification";
 
-// ── Admin pages ────────────────────────────────────────────────────
-const AdminDashboard      = lazy(() => import('./pages/Admin/Dashboard'))
-const AdminLandmarks      = lazy(() => import('./pages/Admin/Landmarks'))
-const AdminEditLandmark   = lazy(() => import('./pages/Admin/Landmarks/EditLandmark'))
-
-// ── 404 ────────────────────────────────────────────────────────────
-const NotFound = lazy(() => import('./pages/NotFound'))
-
-// ── Loading fallback toàn trang ────────────────────────────────────
-function PageLoader() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
-        <p className="text-label-md text-on-surface-variant">Đang tải...</p>
-      </div>
-    </div>
-  )
-}
-
-export default function App() {
+function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/landmarks/:id" element={<LandmarkDetail />} />
 
-          {/* ── Trang người dùng ─────────────────────────────── */}
-          <Route path="/"                   element={<Home />} />
-          <Route path="/landmarks/:id"      element={<LandmarkDetail />} />
+        {/* Admin routes */}
+        <Route path="/admin" element={<Dashboard />} />
+        <Route path="/admin/landmarks" element={<Landmarks />} />
+        <Route
+          path="/admin/landmarks/edit/:id"
+          element={<EditLandmark />}
+        />
+        <Route
+          path="/admin/verification"
+          element={<Verification />}
+        />
 
-          {/* ── Auth ─────────────────────────────────────────── */}
-          <Route path="/login"              element={<Login />} />
-          <Route path="/register"           element={<Register />} />
-
-          {/* ── Admin ─────────────────────────────────────────── */}
-          <Route path="/admin"                        element={<AdminDashboard />} />
-          <Route path="/admin/landmarks"              element={<AdminLandmarks />} />
-          <Route path="/admin/landmarks/new"          element={<AdminEditLandmark />} />
-          <Route path="/admin/landmarks/:id/edit"     element={<AdminEditLandmark />} />
-
-          {/* ── 404 ───────────────────────────────────────────── */}
-          <Route path="*"                   element={<NotFound />} />
-
-        </Routes>
-      </Suspense>
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </BrowserRouter>
-  )
+  );
 }
+
+export default App;
