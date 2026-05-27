@@ -38,6 +38,7 @@ export class UsersService {
         throw new BadRequestException('Vui lòng nhập mật khẩu hiện tại');
       }
       const user = await this.prisma.user.findUnique({ where: { userId } });
+      if (!user) throw new NotFoundException('Người dùng không tồn tại');
       const valid = await bcrypt.compare(currentPassword, user.password);
       if (!valid) throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
       profileData['password'] = await bcrypt.hash(newPassword, 10);
