@@ -12,7 +12,7 @@ const Register = lazy(() => import('./pages/Register'))
 // ── Admin pages ────────────────────────────────────────────────────
 const AdminDashboard      = lazy(() => import('./pages/Admin/Dashboard'))
 const AdminLandmarks      = lazy(() => import('./pages/Admin/Landmarks'))
-const AdminEditLandmark   = lazy(() => import('./pages/Admin/EditLandmark'))
+const AdminEditLandmark   = lazy(() => import('./pages/Admin/Landmarks/EditLandmark'))
 
 // ── 404 ────────────────────────────────────────────────────────────
 const NotFound = lazy(() => import('./pages/NotFound'))
