@@ -6,6 +6,7 @@ import AdminTopBar from '../../../components/layouts/AdminTopBar'
 import { postsService } from '../../../services/posts.service'
 import { locationsService } from '../../../services/locations.service'
 import { useAuthStore } from '../../../store/authStore'
+import ImageUploader from '../../../components/forms/ImageUploader'
 import type { PostStatus } from '../../../types'
 
 // ── Toolbar button ─────────────────────────────────────────────────────────
@@ -43,10 +44,17 @@ export default function EditLandmark() {
   const { user } = useAuthStore()
   const isNew = !id || id === 'new'
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    title: string
+    content: string
+    imageUrl: string | null
+    imagePublicId: string | null
+    locationId: string
+  }>({
     title: '',
     content: '',
-    imageUrl: '',
+    imageUrl: null,
+    imagePublicId: null,
     locationId: '',
   })
   const [error, setError] = useState('')
@@ -67,7 +75,8 @@ export default function EditLandmark() {
       setForm({
         title: existingPost.title,
         content: existingPost.content,
-        imageUrl: existingPost.imageUrl ?? '',
+        imageUrl: existingPost.imageUrl ?? null,
+        imagePublicId: existingPost.imagePublicId ?? null,
         locationId: existingPost.locationId,
       })
     }
@@ -85,7 +94,8 @@ export default function EditLandmark() {
         locationId: form.locationId,
         title: form.title,
         content: form.content,
-        imageUrl: form.imageUrl || undefined,
+        imageUrl: form.imageUrl ?? undefined,
+        imagePublicId: form.imagePublicId ?? undefined,
         status,
       }),
     onSuccess: () => {
@@ -100,7 +110,8 @@ export default function EditLandmark() {
       postsService.updatePost(id!, {
         title: form.title,
         content: form.content,
-        imageUrl: form.imageUrl || undefined,
+        imageUrl: form.imageUrl,
+        imagePublicId: form.imagePublicId,
       }),
     onError: (err: any) => setError(err?.response?.data?.message ?? 'Có lỗi xảy ra'),
   })
@@ -317,19 +328,14 @@ export default function EditLandmark() {
                     </div>
 
                     <div>
-                      <label className="block font-label-md text-label-md text-on-surface-variant mb-2">
-                        URL ảnh bìa
-                      </label>
-                      <input
-                        type="url"
-                        placeholder="https://..."
+                      <ImageUploader
+                        label="Ảnh bìa"
                         value={form.imageUrl}
-                        onChange={e => update('imageUrl', e.target.value)}
-                        className="w-full bg-surface-bright border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors"
+                        publicId={form.imagePublicId}
+                        onChange={({ url, publicId }) =>
+                          setForm(prev => ({ ...prev, imageUrl: url, imagePublicId: publicId }))
+                        }
                       />
-                      {form.imageUrl && (
-                        <img src={form.imageUrl} alt="Preview" className="mt-3 rounded-lg h-40 object-cover w-full" />
-                      )}
                     </div>
                   </div>
                 </div>

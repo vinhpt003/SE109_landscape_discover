@@ -2,11 +2,15 @@ import { Injectable, ConflictException, NotFoundException, UnauthorizedException
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cloudinary: CloudinaryService,
+  ) {}
 
   async findAll(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
@@ -70,20 +74,21 @@ export class UsersService {
       if (existing) throw new ConflictException('Tên đăng nhập đã được sử dụng');
     }
 
+    const current = await this.prisma.user.findUnique({ where: { userId } });
+    if (!current) throw new NotFoundException('Người dùng không tồn tại');
+
     const { currentPassword, newPassword, ...profileData } = dto;
 
     if (newPassword) {
       if (!currentPassword) {
         throw new BadRequestException('Vui lòng nhập mật khẩu hiện tại');
       }
-      const user = await this.prisma.user.findUnique({ where: { userId } });
-      if (!user) throw new NotFoundException('Người dùng không tồn tại');
-      const valid = await bcrypt.compare(currentPassword, user.password);
+      const valid = await bcrypt.compare(currentPassword, current.password);
       if (!valid) throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
       profileData['password'] = await bcrypt.hash(newPassword, 10);
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { userId },
       data: profileData,
       select: {
@@ -95,5 +100,15 @@ export class UsersService {
         createdAt: true,
       },
     });
+
+    if (
+      current.avatarPublicId &&
+      dto.avatarPublicId !== undefined &&
+      dto.avatarPublicId !== current.avatarPublicId
+    ) {
+      this.cloudinary.deleteByPublicId(current.avatarPublicId).catch(() => {});
+    }
+
+    return updated;
   }
 }

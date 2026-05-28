@@ -8,6 +8,7 @@ import { locationsService } from '../../services/locations.service'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../../hooks/useToast'
 import Toaster from '../../components/ui/Toaster'
+import ImageUploader from '../../components/forms/ImageUploader'
 
 const STATUS_LABEL: Record<string, string> = {
   Draft: 'Nháp',
@@ -24,7 +25,19 @@ export default function EditMyPost() {
   const { toasts, toast, dismiss } = useToast()
   const isNew = !id || id === 'new'
 
-  const [form, setForm] = useState({ title: '', content: '', imageUrl: '', locationId: '' })
+  const [form, setForm] = useState<{
+    title: string
+    content: string
+    imageUrl: string | null
+    imagePublicId: string | null
+    locationId: string
+  }>({
+    title: '',
+    content: '',
+    imageUrl: null,
+    imagePublicId: null,
+    locationId: '',
+  })
   const [error, setError] = useState('')
 
   const { data: locations = [] } = useQuery({
@@ -43,7 +56,8 @@ export default function EditMyPost() {
       setForm({
         title: existingPost.title,
         content: existingPost.content,
-        imageUrl: existingPost.imageUrl ?? '',
+        imageUrl: existingPost.imageUrl ?? null,
+        imagePublicId: existingPost.imagePublicId ?? null,
         locationId: existingPost.locationId,
       })
     }
@@ -55,7 +69,8 @@ export default function EditMyPost() {
         locationId: form.locationId,
         title: form.title,
         content: form.content,
-        imageUrl: form.imageUrl || undefined,
+        imageUrl: form.imageUrl ?? undefined,
+        imagePublicId: form.imagePublicId ?? undefined,
         status: publish ? 'Pending' : 'Draft',
       }),
     onSuccess: (_data, publish) => {
@@ -71,7 +86,8 @@ export default function EditMyPost() {
       postsService.updatePost(id!, {
         title: form.title,
         content: form.content,
-        imageUrl: form.imageUrl || undefined,
+        imageUrl: form.imageUrl,
+        imagePublicId: form.imagePublicId,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['my-posts'] })
@@ -203,22 +219,14 @@ export default function EditMyPost() {
                 </div>
 
                 <div>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-2">
-                    URL ảnh bìa
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://..."
+                  <ImageUploader
+                    label="Ảnh bìa"
                     value={form.imageUrl}
-                    onChange={e => update('imageUrl', e.target.value)}
-                    className="w-full bg-surface-bright border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors"
+                    publicId={form.imagePublicId}
+                    onChange={({ url, publicId }) =>
+                      setForm(prev => ({ ...prev, imageUrl: url, imagePublicId: publicId }))
+                    }
                   />
-                  {form.imageUrl && (
-                    <img src={form.imageUrl} alt="Preview" className="mt-3 rounded-lg h-48 object-cover w-full" />
-                  )}
-                  <p className="font-caption text-caption text-outline mt-2">
-                    Tạm thời dán URL ảnh bên ngoài. Tính năng upload ảnh sẽ sớm có (Cloudinary).
-                  </p>
                 </div>
               </div>
             </div>

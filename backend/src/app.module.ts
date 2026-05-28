@@ -11,6 +11,7 @@ import { CommentsModule } from './comments/comments.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { SavedPostsModule } from './saved-posts/saved-posts.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     RatingsModule,
     SavedPostsModule,
     NotificationsModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,12 +4,14 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto, UpdatePostStatusDto } from './dto/update-post.dto';
 import { PostStatus } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class PostsService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private cloudinary: CloudinaryService,
   ) {}
 
   async findAll(query: {
@@ -140,7 +142,18 @@ export class PostsService {
     if (post.authorId !== userId && role !== 'Admin') {
       throw new ForbiddenException('Bạn không có quyền chỉnh sửa bài viết này');
     }
-    return this.prisma.post.update({ where: { postId }, data: dto });
+
+    const updated = await this.prisma.post.update({ where: { postId }, data: dto });
+
+    if (
+      post.imagePublicId &&
+      dto.imagePublicId !== undefined &&
+      dto.imagePublicId !== post.imagePublicId
+    ) {
+      this.cloudinary.deleteByPublicId(post.imagePublicId).catch(() => {});
+    }
+
+    return updated;
   }
 
   async updateStatus(postId: string, dto: UpdatePostStatusDto, actorId: string) {
@@ -184,6 +197,10 @@ export class PostsService {
     if (post.authorId !== userId && role !== 'Admin') {
       throw new ForbiddenException('Bạn không có quyền xóa bài viết này');
     }
-    return this.prisma.post.delete({ where: { postId } });
+    const deleted = await this.prisma.post.delete({ where: { postId } });
+    if (post.imagePublicId) {
+      this.cloudinary.deleteByPublicId(post.imagePublicId).catch(() => {});
+    }
+    return deleted;
   }
 }

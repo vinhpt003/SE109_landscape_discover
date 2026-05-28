@@ -36,13 +36,17 @@ export const postsService = {
     title: string
     content: string
     imageUrl?: string
+    imagePublicId?: string
     status?: PostStatus
   }): Promise<Post> {
     const { data } = await api.post<Post>('/posts', payload)
     return data
   },
 
-  async updatePost(id: string, payload: Partial<{ title: string; content: string; imageUrl: string }>): Promise<Post> {
+  async updatePost(
+    id: string,
+    payload: Partial<{ title: string; content: string; imageUrl: string | null; imagePublicId: string | null }>,
+  ): Promise<Post> {
     const { data } = await api.patch<Post>(`/posts/${id}`, payload)
     return data
   },

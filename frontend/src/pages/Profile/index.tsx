@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
 import Toaster from '../../components/ui/Toaster'
+import ImageUploader from '../../components/forms/ImageUploader'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -13,6 +14,8 @@ export default function Profile() {
   const { toasts, toast, dismiss } = useToast()
 
   const [userName, setUserName] = useState(user?.userName ?? '')
+  const [avatar, setAvatar] = useState<string | null>(user?.avatar ?? null)
+  const [avatarPublicId, setAvatarPublicId] = useState<string | null>(null)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [saving, setSaving] = useState(false)
@@ -32,6 +35,8 @@ export default function Profile() {
 
   const handleCancel = () => {
     setUserName(user.userName)
+    setAvatar(user.avatar)
+    setAvatarPublicId(null)
     setCurrentPassword('')
     setNewPassword('')
   }
@@ -53,7 +58,18 @@ export default function Profile() {
 
     setSaving(true)
     try {
-      const payload: Record<string, string> = { userName: userName.trim() }
+      const payload: {
+        userName: string
+        avatar?: string | null
+        avatarPublicId?: string | null
+        currentPassword?: string
+        newPassword?: string
+      } = { userName: userName.trim() }
+
+      if (avatar !== user.avatar) {
+        payload.avatar = avatar
+        payload.avatarPublicId = avatarPublicId
+      }
       if (newPassword) {
         payload.currentPassword = currentPassword
         payload.newPassword = newPassword
@@ -61,6 +77,7 @@ export default function Profile() {
 
       const updated = await usersService.updateMe(payload)
       login(updated, token!)
+      setAvatarPublicId(null)
       toast('Đã lưu thay đổi thành công!', 'success')
       setCurrentPassword('')
       setNewPassword('')
@@ -84,9 +101,9 @@ export default function Profile() {
             <div className="bg-surface-container-lowest rounded-[16px] shadow-level-1 p-8 text-center">
               {/* Avatar */}
               <div className="relative inline-block mb-6">
-                {user.avatar ? (
+                {avatar ? (
                   <img
-                    src={user.avatar}
+                    src={avatar}
                     alt={user.userName}
                     className="w-24 h-24 rounded-full border-2 border-white shadow-md object-cover"
                   />
@@ -124,6 +141,24 @@ export default function Profile() {
               </h1>
 
               <form className="space-y-8" onSubmit={handleSave}>
+
+                {/* Avatar */}
+                <div className="space-y-2">
+                  <label className="block font-label-md text-label-md text-on-surface-variant">
+                    Ảnh đại diện
+                  </label>
+                  <ImageUploader
+                    variant="avatar"
+                    value={avatar}
+                    publicId={avatarPublicId}
+                    onChange={({ url, publicId }) => {
+                      setAvatar(url)
+                      setAvatarPublicId(publicId)
+                    }}
+                  />
+                </div>
+
+                <hr className="border-surface-container-high" />
 
                 {/* Personal Information */}
                 <div className="space-y-6">

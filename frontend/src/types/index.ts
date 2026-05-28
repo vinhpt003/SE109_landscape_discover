@@ -24,6 +24,7 @@ export interface Post {
   title: string
   content: string
   imageUrl: string | null
+  imagePublicId: string | null
   status: PostStatus
   createdAt: string
   updatedAt: string

@@ -19,6 +19,10 @@ export class CreatePostDto {
   imageUrl?: string;
 
   @IsOptional()
+  @IsString()
+  imagePublicId?: string;
+
+  @IsOptional()
   @IsEnum(PostStatus, { message: 'Trạng thái không hợp lệ' })
   status?: PostStatus;
 }

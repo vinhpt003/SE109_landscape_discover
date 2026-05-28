@@ -29,13 +29,14 @@ enum NotificationType {
 }
 
 model User {
-  userId    String   @id @default(uuid())
-  userName  String   @unique
-  password  String
-  email     String   @unique
-  role      Role     @default(RegisteredUser)
-  avatar    String?
-  createdAt DateTime @default(now())
+  userId          String   @id @default(uuid())
+  userName        String   @unique
+  password        String
+  email           String   @unique
+  role            Role     @default(RegisteredUser)
+  avatar          String?
+  avatarPublicId  String?
+  createdAt       DateTime @default(now())
 
   posts         Post[]
   comments      Comment[]
@@ -54,15 +55,16 @@ model Location {
 }
 
 model Post {
-  postId     String     @id @default(uuid())
-  authorId   String
-  locationId String
-  title      String
-  content    String
-  imageUrl   String?
-  status     PostStatus @default(Draft)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  postId          String     @id @default(uuid())
+  authorId        String
+  locationId      String
+  title           String
+  content         String
+  imageUrl        String?
+  imagePublicId   String?
+  status          PostStatus @default(Draft)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   author   User     @relation(fields: [authorId], references: [userId])
   location Location @relation(fields: [locationId], references: [locationId])

@@ -3,7 +3,8 @@ import type { User } from '../types'
 
 interface UpdateProfilePayload {
   userName?: string
-  avatar?: string
+  avatar?: string | null
+  avatarPublicId?: string | null
   currentPassword?: string
   newPassword?: string
 }
