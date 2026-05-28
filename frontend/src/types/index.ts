@@ -79,3 +79,25 @@ export interface PaginatedResponse<T> {
 export interface CommentWithPost extends Comment {
   post?: Pick<Post, 'postId' | 'title'>
 }
+
+export type NotificationType = 'PostApproved' | 'PostRejected' | 'NewComment' | 'PostPending'
+
+export interface Notification {
+  notificationId: string
+  userId: string
+  type: NotificationType
+  postId: string | null
+  commentId: string | null
+  actorId: string | null
+  message: string
+  read: boolean
+  createdAt: string
+}
+
+export interface NotificationsPaginated {
+  data: Notification[]
+  total: number
+  page: number
+  limit: number
+  unreadCount: number
+}

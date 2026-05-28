@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
@@ -33,15 +33,44 @@ function StatusBadge({ status }: { status: PostStatus }) {
 export default function AdminLandmarks() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<PostStatus | ''>('')
+
+  const urlStatus = searchParams.get('status') as PostStatus | null
+  const focusId = searchParams.get('focus')
+  const [statusFilter, setStatusFilter] = useState<PostStatus | ''>(urlStatus ?? '')
+  const focusRowRef = useRef<HTMLTableRowElement | null>(null)
+
+  useEffect(() => {
+    if (urlStatus && urlStatus !== statusFilter) setStatusFilter(urlStatus)
+  }, [urlStatus])
 
   const { data: postsResponse, isLoading } = useQuery({
     queryKey: ['admin-posts', statusFilter],
-    queryFn: () => postsService.fetchPosts(statusFilter ? { status: statusFilter as PostStatus, limit: 200 } : { limit: 200 }),
+    queryFn: () =>
+      postsService.fetchPosts(
+        statusFilter
+          ? { status: statusFilter as PostStatus, limit: 200 }
+          : { limit: 200 },
+      ),
   })
   const posts = postsResponse?.data ?? []
+
+  useEffect(() => {
+    if (focusId && focusRowRef.current) {
+      focusRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [focusId, posts.length])
+
+  const updateStatusFilter = (value: PostStatus | '') => {
+    setStatusFilter(value)
+    const next = new URLSearchParams(searchParams)
+    if (value) next.set('status', value)
+    else next.delete('status')
+    next.delete('focus')
+    setSearchParams(next, { replace: true })
+  }
 
   const deleteMutation = useMutation({
     mutationFn: (postId: string) => postsService.deletePost(postId),
@@ -119,7 +148,7 @@ export default function AdminLandmarks() {
 
               <select
                 value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value as PostStatus | '')}
+                onChange={e => updateStatusFilter(e.target.value as PostStatus | '')}
                 className="bg-surface-container-low border border-outline-variant rounded-lg py-2.5 px-4 text-on-surface font-body-md text-body-md focus:ring-1 focus:ring-secondary focus:outline-none"
               >
                 <option value="">Tất cả trạng thái</option>
@@ -162,8 +191,18 @@ export default function AdminLandmarks() {
                       </tr>
                     )}
 
-                    {!isLoading && filtered.map(post => (
-                      <tr key={post.postId} className="hover:bg-surface-container-low transition-colors group">
+                    {!isLoading && filtered.map(post => {
+                      const isFocused = focusId === post.postId
+                      return (
+                      <tr
+                        key={post.postId}
+                        ref={isFocused ? focusRowRef : undefined}
+                        className={`transition-colors group ${
+                          isFocused
+                            ? 'bg-tertiary-fixed/40 ring-2 ring-tertiary animate-pulse-once'
+                            : 'hover:bg-surface-container-low'
+                        }`}
+                      >
                         <td className="py-4 px-6">
                           <input
                             type="checkbox"
@@ -234,7 +273,8 @@ export default function AdminLandmarks() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      )
+                    })}
 
                     {!isLoading && filtered.length === 0 && (
                       <tr>

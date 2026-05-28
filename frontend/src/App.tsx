@@ -15,6 +15,10 @@ const Register = lazy(() => import('./pages/Register'))
 // ── Search ─────────────────────────────────────────────────────────
 const Search = lazy(() => import('./pages/Search'))
 
+// ── Editor / My Posts ──────────────────────────────────────────────
+const MyPosts     = lazy(() => import('./pages/MyPosts'))
+const EditMyPost  = lazy(() => import('./pages/MyPosts/EditMyPost'))
+
 // ── Admin pages ────────────────────────────────────────────────────
 const AdminDashboard    = lazy(() => import('./pages/Admin/Dashboard'))
 const AdminLandmarks    = lazy(() => import('./pages/Admin/Landmarks'))
@@ -55,6 +59,13 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/saved"   element={<SavedPosts />} />
             <Route path="/profile" element={<Profile />} />
+          </Route>
+
+          {/* ── Editor + Admin (My Posts) ─────────────────────── */}
+          <Route element={<ProtectedRoute roles={['Editor', 'Admin']} />}>
+            <Route path="/my-posts"             element={<MyPosts />} />
+            <Route path="/my-posts/new"         element={<EditMyPost />} />
+            <Route path="/my-posts/:id/edit"    element={<EditMyPost />} />
           </Route>
 
           {/* ── Admin (Admin role only) ───────────────────────── */}

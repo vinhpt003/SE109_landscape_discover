@@ -10,6 +10,7 @@ import { PostsModule } from './posts/posts.module';
 import { CommentsModule } from './comments/comments.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { SavedPostsModule } from './saved-posts/saved-posts.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SavedPostsModule } from './saved-posts/saved-posts.module';
     CommentsModule,
     RatingsModule,
     SavedPostsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,6 +4,12 @@ import type { Post, PostStatus, PaginatedResponse } from '../types'
 interface PostsParams {
   search?: string
   locationId?: string
+  status?: PostStatus | 'all'
+  page?: number
+  limit?: number
+}
+
+interface MyPostsParams {
   status?: PostStatus
   page?: number
   limit?: number
@@ -15,12 +21,23 @@ export const postsService = {
     return data
   },
 
+  async fetchMyPosts(params?: MyPostsParams): Promise<PaginatedResponse<Post>> {
+    const { data } = await api.get<PaginatedResponse<Post>>('/posts/mine', { params })
+    return data
+  },
+
   async fetchPostById(id: string): Promise<Post> {
     const { data } = await api.get<Post>(`/posts/${id}`)
     return data
   },
 
-  async createPost(payload: { locationId: string; title: string; content: string; imageUrl?: string }): Promise<Post> {
+  async createPost(payload: {
+    locationId: string
+    title: string
+    content: string
+    imageUrl?: string
+    status?: PostStatus
+  }): Promise<Post> {
     const { data } = await api.post<Post>('/posts', payload)
     return data
   },

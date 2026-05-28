@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, Navigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
@@ -530,6 +530,10 @@ export default function Home() {
     } catch {
       // silent
     }
+  }
+
+  if (isAuthenticated && user?.role === 'Admin') {
+    return <Navigate to="/admin" replace />
   }
 
   const featured = posts[0]

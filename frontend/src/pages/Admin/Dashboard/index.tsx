@@ -1,6 +1,28 @@
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
+import { notificationsService } from '../../../services/notifications.service'
+import type { NotificationType } from '../../../types'
+
+const NOTI_ICON: Record<NotificationType, { icon: string; iconBg: string; iconColor: string }> = {
+  PostPending:  { icon: 'pending',       iconBg: 'bg-tertiary-fixed',          iconColor: 'text-tertiary' },
+  PostApproved: { icon: 'check_circle',  iconBg: 'bg-[#e6f4ea]',               iconColor: 'text-secondary' },
+  PostRejected: { icon: 'cancel',        iconBg: 'bg-error-container',         iconColor: 'text-error' },
+  NewComment:   { icon: 'chat',          iconBg: 'bg-primary-fixed',           iconColor: 'text-primary' },
+}
+
+function formatRelative(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return 'vừa xong'
+  if (min < 60) return `${min} phút trước`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr} giờ trước`
+  const day = Math.floor(hr / 24)
+  if (day < 7) return `${day} ngày trước`
+  return new Date(iso).toLocaleDateString('vi-VN')
+}
 
 // ── Mock data ──────────────────────────────────────────────────────────────
 const KPI_CARDS = [
@@ -37,39 +59,14 @@ const CHART_BARS = [
   { label: 'Đảo',   height: '30%', color: '#075fac', value: 150 },
 ]
 
-const ACTIVITIES = [
-  {
-    icon: 'person_add',
-    iconBg: 'bg-[#e6f4ea]',
-    iconColor: 'text-secondary',
-    text: <><span className="font-semibold">Nguyễn Thị Lan</span> đã đăng ký tài khoản mới.</>,
-    time: '10 phút trước',
-  },
-  {
-    icon: 'rate_review',
-    iconBg: 'bg-[#fff0e6]',
-    iconColor: 'text-[#e35d5b]',
-    text: <><span className="font-semibold">Trần Minh T.</span> đã gửi đánh giá về <span className="text-primary cursor-pointer hover:underline">Vịnh Hạ Long</span>.</>,
-    time: '45 phút trước',
-  },
-  {
-    icon: 'add_location',
-    iconBg: 'bg-primary-fixed',
-    iconColor: 'text-primary',
-    text: <><span className="font-semibold">Admin (Auto)</span> đã nhập 12 danh lam mới ở <span className="font-semibold">Miền Trung</span>.</>,
-    time: '2 giờ trước',
-  },
-  {
-    icon: 'image',
-    iconBg: 'bg-surface-container-low',
-    iconColor: 'text-on-surface-variant',
-    text: <>5 ảnh chờ đã được duyệt cho <span className="text-primary cursor-pointer hover:underline">Hoàng Thành Huế</span>.</>,
-    time: '3 giờ trước',
-  },
-]
-
 // ── Component ──────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
+  const { data: notiData } = useQuery({
+    queryKey: ['notifications', 'me'],
+    queryFn: () => notificationsService.fetchMine({ limit: 8 }),
+  })
+  const activities = notiData?.data ?? []
+
   return (
     <div className="bg-surface min-h-screen flex">
       <AdminSideNav />
@@ -165,17 +162,40 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-6 flex-1 overflow-y-auto">
-                  {ACTIVITIES.map((act, i) => (
-                    <div key={i} className="flex gap-4 items-start">
-                      <div className={`w-8 h-8 rounded-full ${act.iconBg} flex items-center justify-center ${act.iconColor} shrink-0 mt-1`}>
-                        <span className="material-symbols-outlined text-[16px]">{act.icon}</span>
-                      </div>
-                      <div>
-                        <p className="font-body-md text-sm text-on-surface">{act.text}</p>
-                        <p className="font-caption text-caption text-on-surface-variant mt-1">{act.time}</p>
-                      </div>
+                  {activities.length === 0 && (
+                    <div className="text-center py-8 text-on-surface-variant">
+                      <span className="material-symbols-outlined text-[40px] opacity-40">notifications_off</span>
+                      <p className="font-body-md text-sm mt-2">Chưa có hoạt động nào</p>
                     </div>
-                  ))}
+                  )}
+                  {activities.map(n => {
+                    const meta = NOTI_ICON[n.type]
+                    const link =
+                      n.type === 'PostPending' && n.postId
+                        ? `/admin/landmarks?status=Pending&focus=${n.postId}`
+                        : n.postId
+                          ? `/landmarks/${n.postId}`
+                          : '#'
+                    return (
+                      <Link
+                        key={n.notificationId}
+                        to={link}
+                        className={`flex gap-4 items-start hover:bg-surface-container-low rounded-lg p-2 -mx-2 transition-colors ${
+                          !n.read ? 'bg-primary-fixed/20' : ''
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full ${meta.iconBg} flex items-center justify-center ${meta.iconColor} shrink-0 mt-1`}>
+                          <span className="material-symbols-outlined text-[16px]">{meta.icon}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-body-md text-sm text-on-surface line-clamp-2">{n.message}</p>
+                          <p className="font-caption text-caption text-on-surface-variant mt-1">
+                            {formatRelative(n.createdAt)}
+                          </p>
+                        </div>
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
             </div>
