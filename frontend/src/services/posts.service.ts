@@ -1,15 +1,17 @@
 import api from './api'
-import type { Post, PostStatus } from '../types'
+import type { Post, PostStatus, PaginatedResponse } from '../types'
 
 interface PostsParams {
   search?: string
   locationId?: string
   status?: PostStatus
+  page?: number
+  limit?: number
 }
 
 export const postsService = {
-  async fetchPosts(params?: PostsParams): Promise<Post[]> {
-    const { data } = await api.get<Post[]>('/posts', { params })
+  async fetchPosts(params?: PostsParams): Promise<PaginatedResponse<Post>> {
+    const { data } = await api.get<PaginatedResponse<Post>>('/posts', { params })
     return data
   },
 

@@ -503,10 +503,11 @@ export default function Home() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { data: posts = [], isLoading, isError } = useQuery({
+  const { data: postsResponse, isLoading, isError } = useQuery({
     queryKey: ['posts', 'Publish', searchQuery],
     queryFn: () => postsService.fetchPosts({ status: 'Publish', search: searchQuery || undefined }),
   })
+  const posts = postsResponse?.data ?? []
 
   const { data: savedPosts = [] } = useQuery({
     queryKey: ['saved-posts'],

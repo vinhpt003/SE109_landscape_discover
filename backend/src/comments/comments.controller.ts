@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, HttpCode, HttpStatus, ForbiddenException } from '@nestjs/common';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtOptionalGuard } from '../auth/jwt-optional.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('comments')
@@ -9,8 +10,27 @@ export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Get()
-  findByPost(@Query('postId') postId: string) {
-    return this.commentsService.findByPost(postId);
+  @UseGuards(JwtOptionalGuard)
+  findAll(
+    @Query('postId') postId?: string,
+    @Query('userId') userId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @CurrentUser() user?: { userId: string; role: string },
+  ) {
+    const isAdmin = user?.role === 'Admin';
+    if (!postId && !isAdmin) {
+      throw new ForbiddenException('postId là bắt buộc');
+    }
+    if (!isAdmin) {
+      return this.commentsService.findByPost(postId!);
+    }
+    return this.commentsService.findAll({
+      postId,
+      userId,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+    });
   }
 
   @Post()

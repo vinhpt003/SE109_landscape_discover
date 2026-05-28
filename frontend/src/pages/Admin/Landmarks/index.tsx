@@ -37,10 +37,11 @@ export default function AdminLandmarks() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<PostStatus | ''>('')
 
-  const { data: posts = [], isLoading } = useQuery({
+  const { data: postsResponse, isLoading } = useQuery({
     queryKey: ['admin-posts', statusFilter],
-    queryFn: () => postsService.fetchPosts(statusFilter ? { status: statusFilter as PostStatus } : {}),
+    queryFn: () => postsService.fetchPosts(statusFilter ? { status: statusFilter as PostStatus, limit: 200 } : { limit: 200 }),
   })
+  const posts = postsResponse?.data ?? []
 
   const deleteMutation = useMutation({
     mutationFn: (postId: string) => postsService.deletePost(postId),
@@ -249,7 +250,7 @@ export default function AdminLandmarks() {
 
               <div className="bg-surface-bright border-t border-outline-variant py-3 px-6 flex items-center justify-between">
                 <span className="font-body-md text-body-md text-on-surface-variant">
-                  Hiển thị {filtered.length} trong tổng số {posts.length} bài viết
+                  Hiển thị {filtered.length} trong tổng số {postsResponse?.total ?? posts.length} bài viết
                 </span>
               </div>
             </div>

@@ -8,24 +8,34 @@ import { PostStatus } from '@prisma/client';
 export class PostsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(query: { search?: string; locationId?: string; status?: PostStatus }) {
-    const { search, locationId, status } = query;
+  async findAll(query: { search?: string; locationId?: string; status?: PostStatus; page?: number; limit?: number }) {
+    const { search, locationId, status, page = 1, limit = 12 } = query;
+    const skip = (page - 1) * limit;
 
-    return this.prisma.post.findMany({
-      where: {
-        ...(status ? { status } : { status: PostStatus.Publish }),
-        ...(locationId ? { locationId } : {}),
-        ...(search
-          ? { OR: [{ title: { contains: search, mode: 'insensitive' } }, { content: { contains: search, mode: 'insensitive' } }] }
-          : {}),
-      },
-      include: {
-        author: { select: { userId: true, userName: true, avatar: true } },
-        location: { select: { locationId: true, locationName: true } },
-        _count: { select: { comments: true, ratings: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const where = {
+      ...(status ? { status } : { status: PostStatus.Publish }),
+      ...(locationId ? { locationId } : {}),
+      ...(search
+        ? { OR: [{ title: { contains: search, mode: 'insensitive' as const } }, { content: { contains: search, mode: 'insensitive' as const } }] }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where,
+        include: {
+          author: { select: { userId: true, userName: true, avatar: true } },
+          location: { select: { locationId: true, locationName: true } },
+          _count: { select: { comments: true, ratings: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.post.count({ where }),
+    ]);
+
+    return { data, total, page, limit };
   }
 
   async findOne(postId: string) {

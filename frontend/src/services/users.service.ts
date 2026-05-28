@@ -9,6 +9,16 @@ interface UpdateProfilePayload {
 }
 
 export const usersService = {
+  async fetchAll(params?: { page?: number; limit?: number }): Promise<{ data: User[]; total: number; page: number; limit: number }> {
+    const { data } = await api.get<{ data: User[]; total: number; page: number; limit: number }>('/users', { params })
+    return data
+  },
+
+  async updateRole(userId: string, role: 'RegisteredUser' | 'Editor'): Promise<User> {
+    const { data } = await api.patch<User>(`/users/${userId}/role`, { role })
+    return data
+  },
+
   async getMe(): Promise<User> {
     const { data } = await api.get<User>('/users/me')
     return data

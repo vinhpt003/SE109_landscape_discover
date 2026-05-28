@@ -20,8 +20,16 @@ export class PostsController {
     @Query('search') search?: string,
     @Query('locationId') locationId?: string,
     @Query('status') status?: PostStatus,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.postsService.findAll({ search, locationId, status });
+    return this.postsService.findAll({
+      search,
+      locationId,
+      status,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
   }
 
   @Get(':id')

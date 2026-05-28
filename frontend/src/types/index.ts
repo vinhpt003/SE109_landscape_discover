@@ -68,3 +68,14 @@ export interface AuthResponse {
   access_token: string
   user: User
 }
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+  page: number
+  limit: number
+}
+
+export interface CommentWithPost extends Comment {
+  post?: Pick<Post, 'postId' | 'title'>
+}
