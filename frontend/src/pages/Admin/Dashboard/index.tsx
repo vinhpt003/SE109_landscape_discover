@@ -41,7 +41,7 @@ export default function AdminDashboard() {
         setChartBars(bars)
 
         // Activities: derive simple recent items from landmarks
-        const acts = lands.slice(0, 6).map((l: Landmark, i: number) => ({
+        const acts = lands.slice(0, 6).map((l: Landmark) => ({
           icon: 'add_location',
           iconBg: 'bg-primary-fixed',
           iconColor: 'text-primary',
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
         }))
         setActivities(acts)
       })
-      .catch(() => {})
+      .catch(() => { })
     return () => { mounted = false }
   }, [])
   return (

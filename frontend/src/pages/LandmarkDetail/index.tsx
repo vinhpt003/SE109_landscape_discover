@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useParams } from 'react-router-dom'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
 import { getLandmarkById } from '../../services/landmarkService'
@@ -108,15 +107,15 @@ export default function LandmarkDetail() {
           </div>
           {/* Small top-right */}
           <div className="col-span-1 row-span-1 relative hidden md:block">
-            <img src={lm.images[1]} alt="" className="w-full h-full object-cover" />
+            <img src={lm?.images?.[1]?.url ?? ''} alt="" className="w-full h-full object-cover" />
           </div>
           {/* Small bottom-right */}
           <div className="col-span-1 row-span-1 relative hidden md:block">
-            <img src={lm.images[2]} alt="" className="w-full h-full object-cover" />
+            <img src={lm?.images?.[2]?.url ?? ''} alt="" className="w-full h-full object-cover" />
           </div>
           {/* Wide bottom */}
           <div className="col-span-1 md:col-span-2 row-span-1 relative hidden md:block">
-            <img src={lm.images[3]} alt="" className="w-full h-full object-cover" />
+            <img src={lm?.images?.[3]?.url ?? ''} alt="" className="w-full h-full object-cover" />
           </div>
         </section>
 
@@ -190,8 +189,12 @@ export default function LandmarkDetail() {
 
               <div className="border-t border-surface-variant pt-4 text-body-md text-on-surface-variant">
                 <div className="flex justify-between">
-                  <span>Tác giả</span>
-                  <span className="text-on-surface font-medium">{post.author?.userName ?? '—'}</span>
+                  <span>Giờ mở cửa</span>
+                  <span className="text-on-surface font-medium">{lm?.hours ?? '08:00 SA - 18:00 CH (Hàng ngày)'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Thời điểm tốt nhất</span>
+                  <span className="text-on-surface font-medium">{lm?.bestTime ?? 'Quanh năm'}</span>
                 </div>
               </div>
             </div>

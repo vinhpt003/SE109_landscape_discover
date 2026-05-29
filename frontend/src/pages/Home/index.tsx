@@ -510,6 +510,22 @@ export default function Home() {
   } : { id: '0', name: 'Đang tải...', rating: 0, reviewCount: 0, image: PLACEHOLDER_IMAGE }
 
   const TRENDING = landmarks.slice(0, 12)
+
+  if (loading) {
+    return (
+      <div className="bg-background text-on-background min-h-screen flex flex-col">
+        <TopNavBar />
+        <main className="flex-1 pt-24 pb-16 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
+            <p className="text-label-md text-on-surface-variant">Đang tải...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
       <TopNavBar />

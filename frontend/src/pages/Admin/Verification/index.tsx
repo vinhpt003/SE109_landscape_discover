@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
 import { getLandmarks } from '../../../services/landmarkService'
-import type { Landmark, Review } from '../../../types'
+import type { Landmark, Review, Media } from '../../../types'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ItemType = 'review' | 'landmark' | 'photo'
@@ -171,10 +171,10 @@ export default function AdminVerification() {
               rating: r.rating,
               landmark: l.title,
               content: r.comment,
-            })
-          })
+            });
+          });
 
-          (l.images ?? []).forEach((m, i) => {
+          (l.images ?? []).forEach((m: Media, i: number) => {
             fromPhotos.push({
               id: `img-${l.id}-${i}`,
               type: 'photo',
@@ -184,8 +184,8 @@ export default function AdminVerification() {
               status: 'pending',
               landmark: l.title,
               preview: m.url,
-            })
-          })
+            });
+          });
         })
 
         const combined = [...fromReviews, ...fromPhotos, FALLBACK_SUGGESTION]
