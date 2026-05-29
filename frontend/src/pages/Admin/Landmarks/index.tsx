@@ -1,30 +1,39 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
-import { postsService } from '../../../services/posts.service'
-import type { Post, PostStatus } from '../../../types'
+import { getLandmarks } from '../../../services/landmarkService'
+import type { Landmark as ApiLandmark } from '../../../types'
+import { REGION_LABEL } from '../../../constants'
 
-// ── Badge ──────────────────────────────────────────────────────────────────
-const STATUS_STYLE: Record<PostStatus, string> = {
-  Publish:  'bg-secondary-container text-on-secondary-container',
-  Draft:    'bg-surface-variant text-on-surface-variant',
-  Pending:  'bg-tertiary-fixed text-on-tertiary-fixed-variant',
-  Rejected: 'bg-error-container text-on-error-container',
+type RowItem = {
+  id: string
+  code: string
+  name: string
+  region: string
+  rating: number | null
+  status: string
+  thumbnail?: string
 }
 
-const STATUS_LABEL: Record<PostStatus, string> = {
-  Publish:  'Đã xuất bản',
-  Draft:    'Nháp',
-  Pending:  'Chờ duyệt',
-  Rejected: 'Từ chối',
+// ── Badge component (map backend status enums to UI)
+const STATUS_STYLE: Record<string, string> = {
+  PUBLISHED: 'bg-secondary-container text-on-secondary-container',
+  ARCHIVED: 'bg-surface-variant text-on-surface-variant',
+  PENDING: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
 }
 
-function StatusBadge({ status }: { status: PostStatus }) {
+const STATUS_LABEL: Record<string, string> = {
+  PUBLISHED: 'Đã xuất bản',
+  ARCHIVED: 'Nháp',
+  PENDING: 'Cần kiểm duyệt',
+}
+
+function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-caption text-caption font-semibold ${STATUS_STYLE[status]}`}>
-      {STATUS_LABEL[status]}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-caption text-caption font-semibold ${STATUS_STYLE[status] ?? ''}`}>
+      {STATUS_LABEL[status] ?? status}
     </span>
   )
 }
@@ -35,23 +44,29 @@ export default function AdminLandmarks() {
   const queryClient = useQueryClient()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<PostStatus | ''>('')
+  const [regionFilter, setRegionFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [rows, setRows] = useState<RowItem[]>([])
 
-  const { data: posts = [], isLoading } = useQuery({
-    queryKey: ['admin-posts', statusFilter],
-    queryFn: () => postsService.fetchPosts(statusFilter ? { status: statusFilter as PostStatus } : {}),
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (postId: string) => postsService.deletePost(postId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-posts'] }),
-  })
-
-  const approveMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: PostStatus }) =>
-      postsService.updatePostStatus(id, status),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-posts'] }),
-  })
+  useEffect(() => {
+    let mounted = true
+    getLandmarks()
+      .then(data => {
+        if (!mounted) return
+        const mapped: RowItem[] = data.map((l: ApiLandmark) => ({
+          id: String(l.id),
+          code: `#LND-${String(l.id).padStart(3, '0')}`,
+          name: l.title,
+          region: REGION_LABEL[l.region],
+          rating: l.reviews?.length ? +(l.reviews.reduce((s, r) => s + r.rating, 0) / l.reviews.length).toFixed(1) : null,
+          status: l.status,
+          thumbnail: l.images?.[0]?.url,
+        }))
+        setRows(mapped)
+      })
+      .catch(() => { })
+    return () => { mounted = false }
+  }, [])
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -71,10 +86,12 @@ export default function AdminLandmarks() {
     setSelected(prev => prev.size === filtered.length ? new Set() : new Set(filtered.map(p => p.postId)))
   }
 
-  const handleDelete = (post: Post) => {
-    if (!window.confirm(`Xóa bài viết "${post.title}"?`)) return
-    deleteMutation.mutate(post.postId)
-  }
+  const filtered = rows.filter(l => {
+    const matchSearch = l.name.toLowerCase().includes(search.toLowerCase())
+    const matchRegion = !regionFilter || l.region === regionFilter
+    const matchStatus = !statusFilter || l.status === statusFilter
+    return matchSearch && matchRegion && matchStatus
+  })
 
   return (
     <div className="bg-surface min-h-screen flex">
@@ -116,17 +133,34 @@ export default function AdminLandmarks() {
                 />
               </div>
 
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value as PostStatus | '')}
-                className="bg-surface-container-low border border-outline-variant rounded-lg py-2.5 px-4 text-on-surface font-body-md text-body-md focus:ring-1 focus:ring-secondary focus:outline-none"
-              >
-                <option value="">Tất cả trạng thái</option>
-                <option value="Publish">Đã xuất bản</option>
-                <option value="Pending">Chờ duyệt</option>
-                <option value="Draft">Nháp</option>
-                <option value="Rejected">Từ chối</option>
-              </select>
+              <div className="flex gap-3 flex-wrap">
+                <select
+                  value={regionFilter}
+                  onChange={e => setRegionFilter(e.target.value)}
+                  className="bg-surface-container-low border border-outline-variant rounded-lg py-2.5 px-4 text-on-surface font-body-md text-body-md focus:ring-1 focus:ring-secondary focus:outline-none"
+                >
+                  <option value="">Tất cả vùng</option>
+                  <option value="Miền Bắc">Miền Bắc</option>
+                  <option value="Miền Trung">Miền Trung</option>
+                  <option value="Miền Nam">Miền Nam</option>
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value)}
+                  className="bg-surface-container-low border border-outline-variant rounded-lg py-2.5 px-4 text-on-surface font-body-md text-body-md focus:ring-1 focus:ring-secondary focus:outline-none"
+                >
+                  <option value="">Tất cả trạng thái</option>
+                  <option value="PUBLISHED">Đã xuất bản</option>
+                  <option value="ARCHIVED">Nháp</option>
+                  <option value="PENDING">Cần kiểm duyệt</option>
+                </select>
+
+                <button className="bg-surface-container text-on-surface px-4 py-2.5 rounded-lg border border-outline-variant font-label-md text-label-md hover:bg-surface-container-high transition-colors flex items-center gap-2">
+                  <span className="material-symbols-outlined">filter_list</span>
+                  Lọc
+                </button>
+              </div>
             </div>
 
             {/* Table */}
@@ -176,8 +210,8 @@ export default function AdminLandmarks() {
                             {post.imageUrl
                               ? <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
                               : <div className="w-full h-full flex items-center justify-center">
-                                  <span className="material-symbols-outlined text-outline">image</span>
-                                </div>
+                                <span className="material-symbols-outlined text-outline">image</span>
+                              </div>
                             }
                           </div>
                         </td>
@@ -249,7 +283,7 @@ export default function AdminLandmarks() {
 
               <div className="bg-surface-bright border-t border-outline-variant py-3 px-6 flex items-center justify-between">
                 <span className="font-body-md text-body-md text-on-surface-variant">
-                  Hiển thị {filtered.length} trong tổng số {posts.length} bài viết
+                  Hiển thị 1–{filtered.length} trong tổng số {rows.length} mục
                 </span>
               </div>
             </div>

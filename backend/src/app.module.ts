@@ -5,25 +5,13 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { LocationsModule } from './locations/locations.module';
-import { PostsModule } from './posts/posts.module';
-import { CommentsModule } from './comments/comments.module';
-import { RatingsModule } from './ratings/ratings.module';
-import { SavedPostsModule } from './saved-posts/saved-posts.module';
+import { LandmarksModule } from './landmarks/landmarks.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule,
-    AuthModule,
-    UsersModule,
-    LocationsModule,
-    PostsModule,
-    CommentsModule,
-    RatingsModule,
-    SavedPostsModule,
-  ],
+  imports: [PrismaModule, AuthModule, UsersModule, LandmarksModule, UploadsModule, ReviewsModule],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

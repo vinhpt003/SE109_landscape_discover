@@ -4,6 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
+import { ConflictException } from '@nestjs/common';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -70,5 +72,34 @@ export class AuthService {
         avatar: user.avatar,
       },
     };
+  }
+
+  async register(registerDto: RegisterDto) {
+    // 1. Kiểm tra xem email đã tồn tại trong Database chưa
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: registerDto.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Email này đã được sử dụng!');
+    }
+
+    // 2. Mã hóa mật khẩu (Bơm muối 10 vòng)
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(registerDto.password, saltRounds);
+
+    // 3. Lưu user mới vào Database với Role mặc định là 'USER'
+    const newUser = await this.prisma.user.create({
+      data: {
+        email: registerDto.email,
+        password: hashedPassword,
+        fullName: registerDto.fullName,
+        role: 'USER',
+      },
+    });
+
+    // 4. Bóc tách mật khẩu ra khỏi kết quả trả về để bảo mật
+    const { password, ...result } = newUser;
+    return result;
   }
 }

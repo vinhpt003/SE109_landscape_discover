@@ -1,21 +1,16 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Request, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CurrentUser } from '../auth/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
+  @UseGuards(JwtAuthGuard) // Phải có token mới vào được đây
   @Get('me')
-  getMe(@CurrentUser() user: { userId: string }) {
-    return this.usersService.findMe(user.userId);
-  }
-
-  @Patch('me')
-  updateMe(@CurrentUser() user: { userId: string }, @Body() dto: UpdateUserDto) {
-    return this.usersService.updateMe(user.userId, dto);
+  getProfile(@Request() req: any) {
+    // req.user.id lấy từ Payload của Token giải mã được
+    return this.usersService.findOne(req.user.id);
   }
 }

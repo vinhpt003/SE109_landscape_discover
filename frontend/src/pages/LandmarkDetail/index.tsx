@@ -1,18 +1,43 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
-import { postsService } from '../../services/posts.service'
-import { commentsService } from '../../services/comments.service'
-import { ratingsService } from '../../services/ratings.service'
-import { useAuthStore } from '../../store/authStore'
-import type { Comment } from '../../types'
+import { getLandmarkById } from '../../services/landmarkService'
+import type { Landmark, Review } from '../../types'
 
-// ── Comment card ───────────────────────────────────────────────────────────
-function CommentCard({ comment }: { comment: Comment }) {
-  const user = comment.user
-  const initials = user?.userName?.slice(0, 2).toUpperCase() ?? '??'
+// UI review shape mapped from backend Review
+type UiReview = {
+  id: number | string
+  author: string
+  initials: string
+  date: string
+  rating: number
+  text: string
+  photos: string[]
+  likes: number
+}
+
+// ── Star rating component ──────────────────────────────────────────────────
+function StarRating({ value, max = 5 }: { value: number; max?: number }) {
+  return (
+    <div className="flex" style={{ color: '#6b3700' }}>
+      {Array.from({ length: max }).map((_, i) => (
+        <span
+          key={i}
+          className="material-symbols-outlined text-[18px]"
+          style={{ fontVariationSettings: i < value ? "'FILL' 1" : "'FILL' 0" }}
+        >
+          star
+        </span>
+      ))}
+    </div>
+  )
+}
+
+// ── Review card ────────────────────────────────────────────────────────────
+function ReviewCard({ review }: { review: UiReview }) {
+  const [liked, setLiked] = useState(false)
 
   return (
     <div className="bg-surface-container-lowest p-6 rounded-xl border border-surface-container-low shadow-ambient flex flex-col gap-4">
@@ -40,55 +65,34 @@ function CommentCard({ comment }: { comment: Comment }) {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function LandmarkDetail() {
-  const { id } = useParams<{ id: string }>()
-  const queryClient = useQueryClient()
-  const { isAuthenticated } = useAuthStore()
-  const [commentText, setCommentText] = useState('')
-  const [userRating, setUserRating] = useState(0)
-  const [hoverRating, setHoverRating] = useState(0)
+  const { id } = useParams()
+  const [lm, setLm] = useState<Landmark | null>(null)
+  const [reviews, setReviews] = useState<UiReview[]>([])
 
-  const { data: post, isLoading, isError } = useQuery({
-    queryKey: ['post', id],
-    queryFn: () => postsService.fetchPostById(id!),
-    enabled: !!id,
-  })
-
-  const addComment = useMutation({
-    mutationFn: (content: string) => commentsService.create(id!, content),
-    onSuccess: () => {
-      setCommentText('')
-      queryClient.invalidateQueries({ queryKey: ['post', id] })
-    },
-  })
-
-  const ratePost = useMutation({
-    mutationFn: (score: number) => ratingsService.upsert(id!, score),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['post', id] })
-    },
-  })
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
-      </div>
-    )
-  }
-
-  if (isError || !post) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background flex-col gap-4">
-        <p className="text-on-surface-variant">Không tìm thấy bài viết.</p>
-        <Link to="/" className="text-primary hover:underline">Về trang chủ</Link>
-      </div>
-    )
-  }
-
-  const comments: Comment[] = (post as any).comments ?? []
-  const avgRating = post.avgRating
-  const ratingCount = post.ratingCount ?? 0
-  const images = post.imageUrl ? [post.imageUrl] : []
+  useEffect(() => {
+    if (!id) return
+    const nid = Number(id)
+    getLandmarkById(nid)
+      .then(data => {
+        setLm(data)
+        const mapped: UiReview[] = (data.reviews ?? []).map((r: Review) => {
+          const author = r.user?.fullName ?? 'Người dùng'
+          const initials = author.split(' ').map(s => s[0]).slice(0, 2).join('').toUpperCase()
+          return {
+            id: r.id,
+            author,
+            initials,
+            date: new Date(r.createdAt).toLocaleDateString(),
+            rating: r.rating,
+            text: r.comment,
+            photos: [],
+            likes: r.usefulVotes ?? 0,
+          }
+        })
+        setReviews(mapped)
+      })
+      .catch(() => { })
+  }, [id])
 
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
@@ -96,48 +100,61 @@ export default function LandmarkDetail() {
 
       <main className="flex-1 pt-24 pb-section-gap container-page flex flex-col gap-8">
 
-        {/* ── Image Mosaic / Single image ─────────────────────────── */}
-        {images.length > 0 && (
-          <section className="h-[400px] md:h-[480px] rounded-xl overflow-hidden card-shadow">
-            <img src={images[0]} alt={post.title} className="w-full h-full object-cover" />
-          </section>
-        )}
+        {/* ── Image Mosaic ───────────────────────────────────────── */}
+        <section className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-4 h-[400px] md:h-[560px] rounded-xl overflow-hidden card-shadow">
+          {/* Main large image */}
+          <div className="col-span-1 md:col-span-2 row-span-2 relative">
+            <img src={lm?.images?.[0]?.url ?? ''} alt={lm?.title ?? ''} className="w-full h-full object-cover" />
+          </div>
+          {/* Small top-right */}
+          <div className="col-span-1 row-span-1 relative hidden md:block">
+            <img src={lm.images[1]} alt="" className="w-full h-full object-cover" />
+          </div>
+          {/* Small bottom-right */}
+          <div className="col-span-1 row-span-1 relative hidden md:block">
+            <img src={lm.images[2]} alt="" className="w-full h-full object-cover" />
+          </div>
+          {/* Wide bottom */}
+          <div className="col-span-1 md:col-span-2 row-span-1 relative hidden md:block">
+            <img src={lm.images[3]} alt="" className="w-full h-full object-cover" />
+          </div>
+        </section>
 
         {/* ── Core Info Panel ────────────────────────────────────── */}
         <section className="flex flex-col md:flex-row gap-8">
           <div className="flex-1 flex flex-col gap-6 bg-surface-container-lowest p-6 md:p-8 rounded-xl card-shadow border border-surface-container-low">
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-start flex-wrap gap-2">
-                <h1 className="font-display text-display-lg text-on-surface">{post.title}</h1>
+                <h1 className="font-display text-display-lg text-on-surface">{lm?.title ?? '—'}</h1>
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full font-caption text-caption">
-                  {post.status}
+                  <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                  {lm?.status ?? '—'}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-4 text-on-surface-variant font-body-md text-body-md">
-                {post.location && (
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[20px]">location_on</span>
-                    {post.location.locationName}
-                  </span>
-                )}
-                {avgRating !== null && avgRating !== undefined && (
-                  <span className="flex items-center gap-1 text-primary">
-                    <span className="material-symbols-outlined text-[20px] icon-fill">star</span>
-                    {avgRating.toFixed(1)} ({ratingCount.toLocaleString()} đánh giá)
-                  </span>
-                )}
-                {post.author && (
-                  <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[20px]">person</span>
-                    {post.author.userName}
-                  </span>
-                )}
+                <span className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[20px]">location_on</span>
+                  {lm?.province ?? '—'}
+                </span>
+                <span className="flex items-center gap-1 text-primary">
+                  <span className="material-symbols-outlined text-[20px] icon-fill">star</span>
+                  {lm ? (lm.reviews?.length ? (lm.reviews.reduce((s, r) => s + r.rating, 0) / lm.reviews.length).toFixed(1) : '—') : '—'} ({lm?.reviews?.length ?? 0} đánh giá)
+                </span>
               </div>
             </div>
 
-            <p className="font-sans text-body-lg text-on-surface-variant leading-relaxed whitespace-pre-line">
-              {post.content}
+            <p className="font-sans text-body-lg text-on-surface-variant leading-relaxed">
+              {lm?.description ?? '—'}
             </p>
+
+            <div className="border-t border-surface-variant pt-6">
+              <h2 className="font-display text-headline-md text-on-surface mb-3">
+                Ý nghĩa lịch sử & văn hóa
+              </h2>
+              <p className="font-sans text-body-md text-on-surface-variant leading-relaxed">
+                {lm?.content ?? '—'}
+              </p>
+            </div>
           </div>
 
           {/* Action panel */}
@@ -215,11 +232,9 @@ export default function LandmarkDetail() {
 
           {/* Comment list */}
           <div className="flex flex-col gap-6">
-            {comments.length === 0 ? (
-              <p className="text-on-surface-variant font-body-md text-body-md">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
-            ) : (
-              comments.map(c => <CommentCard key={c.commentId} comment={c} />)
-            )}
+            {reviews.map(review => (
+              <ReviewCard key={review.id} review={review} />
+            ))}
           </div>
         </section>
 
