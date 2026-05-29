@@ -11,7 +11,31 @@ async function bootstrap() {
   const corsOrigin = process.env.CORS_ORIGIN;
   app.enableCors({
     origin: corsOrigin
-      ? corsOrigin.split(',').map((o) => o.trim())
+      ? (origin, callback) => {
+          if (!origin) {
+            callback(null, true);
+            return;
+          }
+          const allowedOrigins = corsOrigin.split(',').map((o) => o.trim());
+          const isAllowed = allowedOrigins.some((o) => {
+            if (o === '*') return true;
+            if (o.includes('*')) {
+              const regexStr =
+                '^' +
+                o
+                  .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+                  .replace(/\\\*/g, '[a-zA-Z0-9-.]+') +
+                '$';
+              return new RegExp(regexStr).test(origin);
+            }
+            return o === origin;
+          });
+          if (isAllowed) {
+            callback(null, true);
+          } else {
+            callback(null, false);
+          }
+        }
       : /^http:\/\/localhost(:\d+)?$/,
     credentials: true,
   });
