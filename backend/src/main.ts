@@ -8,8 +8,11 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
+  const corsOrigin = process.env.CORS_ORIGIN;
   app.enableCors({
-    origin: /^http:\/\/localhost(:\d+)?$/,
+    origin: corsOrigin
+      ? corsOrigin.split(',').map((o) => o.trim())
+      : /^http:\/\/localhost(:\d+)?$/,
     credentials: true,
   });
 
