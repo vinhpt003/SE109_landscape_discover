@@ -1,13 +1,42 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { authService } from '../../services/auth.service'
+import { useAuthStore } from '../../store/authStore'
+import { useToast } from '../../hooks/useToast'
+import Toaster from '../../components/ui/Toaster'
 
 export default function Login() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const login = useAuthStore(s => s.login)
+  const { toasts, toast, dismiss } = useToast()
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!identifier || !password) {
+      toast('Vui lòng nhập đầy đủ thông tin', 'error')
+      return
+    }
+    setLoading(true)
+    try {
+      const { user, access_token } = await authService.login(identifier, password)
+      login(user, access_token)
+      toast('Đăng nhập thành công!', 'success', 1500)
+      setTimeout(() => {
+        navigate(user.role === 'Admin' || user.role === 'Editor' ? '/admin' : '/')
+      }, 800)
+    } catch (err: any) {
+      toast(err?.response?.data?.message ?? 'Đăng nhập thất bại', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-margin-mobile">
+      <Toaster toasts={toasts} onDismiss={dismiss} />
+
       <div className="w-full max-w-md bg-surface-container-lowest rounded-xl p-10 card-shadow border border-surface-container-low">
 
         {/* Logo */}
@@ -24,25 +53,27 @@ export default function Login() {
         </p>
 
         <div className="flex flex-col gap-5">
-          {/* Email */}
           <div>
-            <label className="block font-label-md text-label-md text-on-surface-variant mb-2">Email</label>
+            <label className="block font-label-md text-label-md text-on-surface-variant mb-2">
+              Email hoặc tên đăng nhập
+            </label>
             <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="email@example.com"
+              type="text"
+              value={identifier}
+              onChange={e => setIdentifier(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              placeholder="email@example.com hoặc username"
               className="w-full bg-surface-bright border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors"
             />
           </div>
 
-          {/* Password */}
           <div>
             <label className="block font-label-md text-label-md text-on-surface-variant mb-2">Mật khẩu</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
               placeholder="••••••••"
               className="w-full bg-surface-bright border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors"
             />
@@ -50,10 +81,11 @@ export default function Login() {
 
           <button
             type="button"
-            onClick={() => navigate('/')}
-            className="w-full bg-primary text-on-primary py-3 rounded-lg font-label-md text-label-md hover:bg-primary-container transition-colors shadow-float mt-2"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full bg-primary text-on-primary py-3 rounded-lg font-label-md text-label-md hover:bg-primary-container transition-colors shadow-float mt-2 disabled:opacity-60"
           >
-            Đăng nhập
+            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
 
           <p className="text-center font-body-md text-body-md text-on-surface-variant">

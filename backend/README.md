@@ -1,98 +1,220 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# WanderShare — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS + Prisma + PostgreSQL (Prisma Postgres managed)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Yêu cầu
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- Node.js >= 18
+- npm >= 9
 
-## Project setup
+---
+
+## Cài đặt
 
 ```bash
-$ npm install
+npm install
 ```
 
-## Compile and run the project
+---
+
+## Cấu hình môi trường
+
+
+```env
+DATABASE_URL="postgres://..."   # pooled URL — dùng cho app runtime
+DIRECT_URL="postgres://..."     # direct URL — dùng cho migration
+JWT_SECRET="..."
+PORT=3000
+```
+
+> Nếu cần thay database mới, cập nhật cả hai biến `DATABASE_URL` và `DIRECT_URL`.
+
+---
+
+## Khởi chạy
+
+### Development (watch mode — tự reload khi sửa code)
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run start:dev
 ```
 
-## Run tests
+Server khởi động tại: `http://localhost:3000`
+
+### Production
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run build
+npm run start:prod
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Database
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Đẩy schema lên database (lần đầu hoặc sau khi sửa `schema.prisma`)
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npx prisma db push
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+> Lệnh này đồng bộ schema trong `prisma/schema.prisma` với database thật. Dùng `DIRECT_URL` để kết nối trực tiếp (bỏ qua connection pooler).
 
-## Resources
+### Seed dữ liệu mẫu
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+npm run seed
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Seed sẽ **xóa toàn bộ data cũ** rồi tạo lại:
 
-## Support
+| Role | userName | password |
+|---|---|---|
+| Admin | `admin` | `admin123` |
+| Editor | `editor_viet` | `editor123` |
+| Editor | `editor_mai` | `editor123` |
+| RegisteredUser | `traveler_hung` | `user123` |
+| RegisteredUser | `traveler_linh` | `user123` |
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Kèm theo: 8 địa điểm, 12 bài viết (11 Publish + 1 Pending), comments, ratings, saved posts.
 
-## Stay in touch
+> Để chạy lại seed bất cứ lúc nào (reset toàn bộ data về mẫu):
+> ```bash
+> npm run seed
+> ```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
-## License
+## Xem database trực quan — Prisma Studio
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Prisma Studio là giao diện web để xem và chỉnh sửa dữ liệu trong database, không cần dùng SQL.
+
+### Khởi chạy Prisma Studio
+
+```bash
+npx prisma studio
+```
+
+Trình duyệt sẽ tự mở tại: `http://localhost:5555`
+
+### Cách dùng
+
+1. Chọn bảng ở cột bên trái (User, Post, Location, Comment, Rating, SavedPost)
+2. Xem, lọc, sắp xếp dữ liệu trực tiếp trên giao diện
+3. Click vào một record để xem chi tiết và các quan hệ liên kết
+4. Có thể thêm/sửa/xóa record thủ công ngay trên UI
+
+> Prisma Studio dùng `DIRECT_URL` để kết nối — chạy song song với server không ảnh hưởng gì.
+
+---
+
+## API Endpoints
+
+Tất cả endpoints đều có prefix gốc `http://localhost:3000`.
+
+### Auth
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| POST | `/auth/register` | Đăng ký tài khoản mới (RegisteredUser) | — |
+| POST | `/auth/login` | Đăng nhập (email hoặc userName + password) | — |
+
+**Body đăng nhập:**
+```json
+{ "identifier": "admin", "password": "admin123" }
+```
+
+**Body đăng ký:**
+```json
+{ "userName": "myname", "email": "me@example.com", "password": "123456" }
+```
+
+### Users
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| GET | `/users/me` | Thông tin user hiện tại | Bearer token |
+| PATCH | `/users/me` | Cập nhật thông tin cá nhân | Bearer token |
+
+### Locations
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| GET | `/locations` | Danh sách địa điểm | — |
+| GET | `/locations/:id` | Chi tiết địa điểm | — |
+| POST | `/locations` | Tạo địa điểm mới | Admin |
+
+### Posts
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| GET | `/posts` | Danh sách bài viết (mặc định chỉ Publish) | — |
+| GET | `/posts?status=Pending` | Lọc theo trạng thái | — |
+| GET | `/posts?search=hội an` | Tìm kiếm theo tiêu đề/nội dung | — |
+| GET | `/posts/:id` | Chi tiết bài viết (kèm comments, avgRating) | — |
+| POST | `/posts` | Tạo bài viết (Draft) | Editor / Admin |
+| PATCH | `/posts/:id` | Cập nhật nội dung | Tác giả / Admin |
+| PATCH | `/posts/:id/status` | Duyệt / từ chối bài | Admin |
+| DELETE | `/posts/:id` | Xóa bài viết | Tác giả / Admin |
+
+**PostStatus:** `Draft` → `Pending` → `Publish` hoặc `Rejected`
+
+### Comments
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| GET | `/comments?postId=<uuid>` | Bình luận theo bài viết | — |
+| POST | `/comments` | Đăng bình luận | Bearer token |
+| DELETE | `/comments/:id` | Xóa bình luận | Chủ sở hữu / Admin |
+
+### Ratings
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| GET | `/ratings/summary/:postId` | Điểm TB + số lượng đánh giá | — |
+| POST | `/ratings` | Tạo hoặc cập nhật đánh giá (1–5) | Bearer token |
+
+### Saved Posts
+
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| GET | `/saved-posts/me` | Danh sách bài đã lưu | Bearer token |
+| POST | `/saved-posts` | Toggle lưu / bỏ lưu bài viết | Bearer token |
+
+---
+
+## Cấu trúc thư mục
+
+```
+backend/
+├── prisma/
+│   ├── schema.prisma       # Định nghĩa 6 models: User, Location, Post, Comment, Rating, SavedPost
+│   └── seed.ts             # Script tạo dữ liệu mẫu
+├── src/
+│   ├── auth/               # JWT auth, guards, strategy, decorators
+│   ├── users/              # GET/PATCH /users/me
+│   ├── locations/          # CRUD địa điểm
+│   ├── posts/              # CRUD bài viết + duyệt bài
+│   ├── comments/           # Bình luận
+│   ├── ratings/            # Đánh giá điểm
+│   ├── saved-posts/        # Bookmark bài viết
+│   └── prisma/             # PrismaService (singleton client)
+├── .env                    # Biến môi trường (không commit lên git)
+└── prisma.config.ts        # Cấu hình Prisma CLI (url + directUrl)
+```
+
+---
+
+## Scripts
+
+| Lệnh | Mô tả |
+|---|---|
+| `npm run start:dev` | Chạy server development (watch mode) |
+| `npm run build` | Build TypeScript sang JavaScript |
+| `npm run start:prod` | Chạy server production |
+| `npm run seed` | Seed dữ liệu mẫu vào database |
+| `npx prisma db push` | Đồng bộ schema lên database |
+| `npx prisma studio` | Mở Prisma Studio tại localhost:5555 |
+| `npm run test` | Chạy unit tests |

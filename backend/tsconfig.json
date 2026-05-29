@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "resolvePackageJsonExports": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "5.0",
     "esModuleInterop": true,
     "isolatedModules": false,
     "declaration": true,
@@ -20,6 +20,10 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "types": [
+      "jest",
+      "node"
+    ]
   }
 }

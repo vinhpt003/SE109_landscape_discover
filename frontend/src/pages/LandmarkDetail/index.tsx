@@ -1,129 +1,94 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
+import { postsService } from '../../services/posts.service'
+import { commentsService } from '../../services/comments.service'
+import { ratingsService } from '../../services/ratings.service'
+import { useAuthStore } from '../../store/authStore'
+import type { Comment } from '../../types'
 
-// ── Mock data ──────────────────────────────────────────────────────────────
-const MOCK_LANDMARK = {
-  id: '1',
-  name: 'Hoàng Thành Huế',
-  location: 'Khu phố cổ, Miền Trung',
-  rating: 4.8,
-  reviewCount: 2400,
-  status: 'Đang mở cửa',
-  hours: '8:00 SA - 6:00 CH',
-  bestTime: 'Sáng sớm',
-  description:
-    'Một kỳ quan công trình cổ đại, Hoàng Thành Huế là minh chứng cho tài năng kiến trúc của thời kỳ hoàng kim. Đứng trên đỉnh cao của thung lũng, nơi đây cung cấp tầm nhìn toàn cảnh tuyệt đẹp đã bảo vệ vùng đất này suốt nhiều thế kỷ.',
-  significance: 'Công trình thế kỷ 19 đại diện cho đỉnh cao kiến trúc kinh đô triều Nguyễn.',
-  images: [
-    'https://images.unsplash.com/photo-1557750255-c76072a7aad1?w=900&q=80',
-    'https://images.unsplash.com/photo-1557750221-5350ef7e7d35?w=600&q=80',
-    'https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80',
-    'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=900&q=80',
-  ],
-}
-
-const MOCK_REVIEWS = [
-  {
-    id: '1',
-    author: 'Nguyễn Thị Mai',
-    initials: 'NM',
-    date: '2 ngày trước',
-    rating: 5,
-    text: 'Ánh sáng buổi sáng ở đây thật sự tuyệt vời. Thức dậy lúc 5 giờ sáng để đón bình minh trên những công trình cổ đại — hoàn toàn xứng đáng. Không khí yên tĩnh và thanh bình đến lạ.',
-    photos: [
-      'https://images.unsplash.com/photo-1557750255-c76072a7aad1?w=400&q=80',
-      'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=400&q=80',
-    ],
-    likes: 24,
-  },
-  {
-    id: '2',
-    author: 'Trần Minh Anh',
-    initials: 'MA',
-    date: '5 giờ trước',
-    rating: 4,
-    text: 'Kiến trúc ấn tượng. Đường đi lên hơi vất vả nhưng tầm nhìn từ trên xuống xứng đáng từng bước chân. Nhớ mang theo đủ nước!',
-    photos: [],
-    likes: 12,
-  },
-]
-
-// ── Star rating component ──────────────────────────────────────────────────
-function StarRating({ value, max = 5 }: { value: number; max?: number }) {
-  return (
-    <div className="flex" style={{ color: '#6b3700' }}>
-      {Array.from({ length: max }).map((_, i) => (
-        <span
-          key={i}
-          className="material-symbols-outlined text-[18px]"
-          style={{ fontVariationSettings: i < value ? "'FILL' 1" : "'FILL' 0" }}
-        >
-          star
-        </span>
-      ))}
-    </div>
-  )
-}
-
-// ── Review card ────────────────────────────────────────────────────────────
-function ReviewCard({ review }: { review: typeof MOCK_REVIEWS[0] }) {
-  const [liked, setLiked] = useState(false)
+// ── Comment card ───────────────────────────────────────────────────────────
+function CommentCard({ comment }: { comment: Comment }) {
+  const user = comment.user
+  const initials = user?.userName?.slice(0, 2).toUpperCase() ?? '??'
 
   return (
     <div className="bg-surface-container-lowest p-6 rounded-xl border border-surface-container-low shadow-ambient flex flex-col gap-4">
-      {/* Header */}
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-primary font-bold text-label-md">
-            {review.initials}
-          </div>
+          {user?.avatar ? (
+            <img src={user.avatar} alt={user.userName} className="w-10 h-10 rounded-full object-cover" />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-primary font-bold text-label-md">
+              {initials}
+            </div>
+          )}
           <div>
-            <p className="font-label-md text-label-md text-on-surface">{review.author}</p>
-            <p className="font-caption text-caption text-on-surface-variant">{review.date}</p>
+            <p className="font-label-md text-label-md text-on-surface">{user?.userName ?? 'Người dùng'}</p>
+            <p className="font-caption text-caption text-on-surface-variant">
+              {new Date(comment.createdAt).toLocaleDateString('vi-VN')}
+            </p>
           </div>
         </div>
-        <StarRating value={review.rating} />
       </div>
-
-      {/* Text */}
-      <p className="text-on-surface-variant leading-relaxed text-body-md">{review.text}</p>
-
-      {/* Photos grid */}
-      {review.photos.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 rounded-lg overflow-hidden h-[180px]">
-          {review.photos.map((src, i) => (
-            <img key={i} src={src} alt={`Ảnh ${i + 1}`} className="w-full h-full object-cover" />
-          ))}
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="flex items-center gap-6 pt-2 border-t border-surface-variant/30">
-        <button
-          onClick={() => setLiked(v => !v)}
-          className={`flex items-center gap-1.5 font-label-md text-label-md transition-colors ${liked ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`}
-        >
-          <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: liked ? "'FILL' 1" : "'FILL' 0" }}>
-            thumb_up
-          </span>
-          <span>{review.likes + (liked ? 1 : 0)}</span>
-        </button>
-        <button className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors">
-          <span className="material-symbols-outlined text-[20px]">mode_comment</span>
-          <span>Bình luận</span>
-        </button>
-      </div>
+      <p className="text-on-surface-variant leading-relaxed text-body-md">{comment.content}</p>
     </div>
   )
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function LandmarkDetail() {
-  const { id } = useParams()
-  // TODO: fetch landmark by id — dùng mock data tạm
-  const lm = MOCK_LANDMARK
+  const { id } = useParams<{ id: string }>()
+  const queryClient = useQueryClient()
+  const { isAuthenticated } = useAuthStore()
+  const [commentText, setCommentText] = useState('')
+  const [userRating, setUserRating] = useState(0)
+  const [hoverRating, setHoverRating] = useState(0)
+
+  const { data: post, isLoading, isError } = useQuery({
+    queryKey: ['post', id],
+    queryFn: () => postsService.fetchPostById(id!),
+    enabled: !!id,
+  })
+
+  const addComment = useMutation({
+    mutationFn: (content: string) => commentsService.create(id!, content),
+    onSuccess: () => {
+      setCommentText('')
+      queryClient.invalidateQueries({ queryKey: ['post', id] })
+    },
+  })
+
+  const ratePost = useMutation({
+    mutationFn: (score: number) => ratingsService.upsert(id!, score),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['post', id] })
+    },
+  })
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
+      </div>
+    )
+  }
+
+  if (isError || !post) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background flex-col gap-4">
+        <p className="text-on-surface-variant">Không tìm thấy bài viết.</p>
+        <Link to="/" className="text-primary hover:underline">Về trang chủ</Link>
+      </div>
+    )
+  }
+
+  const comments: Comment[] = (post as any).comments ?? []
+  const avgRating = post.avgRating
+  const ratingCount = post.ratingCount ?? 0
+  const images = post.imageUrl ? [post.imageUrl] : []
 
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
@@ -131,89 +96,85 @@ export default function LandmarkDetail() {
 
       <main className="flex-1 pt-24 pb-section-gap container-page flex flex-col gap-8">
 
-        {/* ── Image Mosaic ───────────────────────────────────────── */}
-        <section className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-4 h-[400px] md:h-[560px] rounded-xl overflow-hidden card-shadow">
-          {/* Main large image */}
-          <div className="col-span-1 md:col-span-2 row-span-2 relative">
-            <img src={lm.images[0]} alt={lm.name} className="w-full h-full object-cover" />
-          </div>
-          {/* Small top-right */}
-          <div className="col-span-1 row-span-1 relative hidden md:block">
-            <img src={lm.images[1]} alt="" className="w-full h-full object-cover" />
-          </div>
-          {/* Small bottom-right */}
-          <div className="col-span-1 row-span-1 relative hidden md:block">
-            <img src={lm.images[2]} alt="" className="w-full h-full object-cover" />
-          </div>
-          {/* Wide bottom */}
-          <div className="col-span-1 md:col-span-2 row-span-1 relative hidden md:block">
-            <img src={lm.images[3]} alt="" className="w-full h-full object-cover" />
-          </div>
-        </section>
+        {/* ── Image Mosaic / Single image ─────────────────────────── */}
+        {images.length > 0 && (
+          <section className="h-[400px] md:h-[480px] rounded-xl overflow-hidden card-shadow">
+            <img src={images[0]} alt={post.title} className="w-full h-full object-cover" />
+          </section>
+        )}
 
         {/* ── Core Info Panel ────────────────────────────────────── */}
         <section className="flex flex-col md:flex-row gap-8">
-          {/* Main info */}
           <div className="flex-1 flex flex-col gap-6 bg-surface-container-lowest p-6 md:p-8 rounded-xl card-shadow border border-surface-container-low">
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-start flex-wrap gap-2">
-                <h1 className="font-display text-display-lg text-on-surface">{lm.name}</h1>
+                <h1 className="font-display text-display-lg text-on-surface">{post.title}</h1>
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full font-caption text-caption">
-                  <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                  {lm.status}
+                  {post.status}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-4 text-on-surface-variant font-body-md text-body-md">
-                <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[20px]">location_on</span>
-                  {lm.location}
-                </span>
-                <span className="flex items-center gap-1 text-primary">
-                  <span className="material-symbols-outlined text-[20px] icon-fill">star</span>
-                  {lm.rating} ({lm.reviewCount.toLocaleString()} đánh giá)
-                </span>
+                {post.location && (
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[20px]">location_on</span>
+                    {post.location.locationName}
+                  </span>
+                )}
+                {avgRating !== null && avgRating !== undefined && (
+                  <span className="flex items-center gap-1 text-primary">
+                    <span className="material-symbols-outlined text-[20px] icon-fill">star</span>
+                    {avgRating.toFixed(1)} ({ratingCount.toLocaleString()} đánh giá)
+                  </span>
+                )}
+                {post.author && (
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[20px]">person</span>
+                    {post.author.userName}
+                  </span>
+                )}
               </div>
             </div>
 
-            <p className="font-sans text-body-lg text-on-surface-variant leading-relaxed">
-              {lm.description}
+            <p className="font-sans text-body-lg text-on-surface-variant leading-relaxed whitespace-pre-line">
+              {post.content}
             </p>
-
-            <div className="border-t border-surface-variant pt-6">
-              <h2 className="font-display text-headline-md text-on-surface mb-3">
-                Ý nghĩa lịch sử & văn hóa
-              </h2>
-              <p className="font-sans text-body-md text-on-surface-variant leading-relaxed">
-                {lm.significance}
-              </p>
-            </div>
           </div>
 
           {/* Action panel */}
           <div className="w-full md:w-[340px] shrink-0">
             <div className="bg-surface-container-lowest p-6 rounded-xl card-shadow border border-surface-container-low flex flex-col gap-6 sticky top-24">
               <div>
-                <h3 className="font-display text-headline-md text-on-surface mb-1">Lên kế hoạch tham quan</h3>
-                <p className="font-sans text-body-md text-on-surface-variant">
-                  Tham gia cộng đồng đang lên kế hoạch đến đây.
-                </p>
+                <h3 className="font-display text-headline-md text-on-surface mb-1">Đánh giá bài viết này</h3>
+                {isAuthenticated ? (
+                  <div className="flex gap-1 mt-3">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        key={star}
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        onClick={() => { setUserRating(star); ratePost.mutate(star) }}
+                        style={{ color: '#6b3700' }}
+                      >
+                        <span
+                          className="material-symbols-outlined text-[28px]"
+                          style={{ fontVariationSettings: star <= (hoverRating || userRating) ? "'FILL' 1" : "'FILL' 0" }}
+                        >
+                          star
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="font-body-md text-body-md text-on-surface-variant mt-2">
+                    <Link to="/login" className="text-primary hover:underline">Đăng nhập</Link> để đánh giá bài viết.
+                  </p>
+                )}
               </div>
 
-              <button className="w-full bg-[#ea580c] text-white font-label-md text-label-md py-3 px-6 rounded-lg hover:bg-[#c2410c] transition-colors card-shadow">
-                Tham gia nhóm
-              </button>
-              <button className="w-full bg-secondary-container text-on-secondary-container font-label-md text-label-md py-3 px-6 rounded-lg hover:bg-secondary-fixed transition-colors">
-                Đăng bài đến điểm đến này
-              </button>
-
-              <div className="border-t border-surface-variant pt-4 flex flex-col gap-3 font-body-md text-body-md text-on-surface-variant">
+              <div className="border-t border-surface-variant pt-4 text-body-md text-on-surface-variant">
                 <div className="flex justify-between">
-                  <span>Giờ mở cửa</span>
-                  <span className="text-on-surface font-medium">{lm.hours}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Thời điểm tốt nhất</span>
-                  <span className="text-on-surface font-medium">{lm.bestTime}</span>
+                  <span>Tác giả</span>
+                  <span className="text-on-surface font-medium">{post.author?.userName ?? '—'}</span>
                 </div>
               </div>
             </div>
@@ -222,29 +183,43 @@ export default function LandmarkDetail() {
 
         {/* ── Community Feed ─────────────────────────────────────── */}
         <section className="flex flex-col gap-6">
-          <h2 className="font-display text-headline-lg text-on-surface">Cộng đồng chia sẻ</h2>
+          <h2 className="font-display text-headline-lg text-on-surface">Cộng đồng bình luận</h2>
 
-          {/* Action bar */}
-          <div className="bg-surface-container-lowest p-4 md:p-6 rounded-xl border border-surface-container-low flex flex-wrap items-center gap-4 card-shadow">
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-primary text-on-primary rounded-full font-label-md text-label-md hover:bg-primary-container hover:text-on-primary-container transition-all">
-              <span className="material-symbols-outlined text-[20px]">edit_note</span>
-              Viết đánh giá
-            </button>
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-secondary-container text-on-secondary-container rounded-full font-label-md text-label-md hover:bg-secondary-fixed transition-all">
-              <span className="material-symbols-outlined text-[20px]">add_a_photo</span>
-              Đăng ảnh
-            </button>
-            <button className="flex items-center gap-2 px-6 py-2.5 border border-outline-variant text-on-surface-variant rounded-full font-label-md text-label-md hover:bg-surface-container-low transition-all">
-              <span className="material-symbols-outlined text-[20px]">star</span>
-              Đánh giá điểm này
-            </button>
-          </div>
+          {/* Comment input */}
+          {isAuthenticated && (
+            <div className="bg-surface-container-lowest p-4 md:p-6 rounded-xl border border-surface-container-low card-shadow flex flex-col gap-3">
+              <textarea
+                rows={3}
+                placeholder="Viết bình luận của bạn..."
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                className="w-full bg-surface-bright border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors resize-none"
+              />
+              <div className="flex justify-end">
+                <button
+                  onClick={() => commentText.trim() && addComment.mutate(commentText.trim())}
+                  disabled={addComment.isPending || !commentText.trim()}
+                  className="px-6 py-2.5 bg-primary text-on-primary rounded-full font-label-md text-label-md hover:bg-primary-container transition-all disabled:opacity-60"
+                >
+                  {addComment.isPending ? 'Đang gửi...' : 'Gửi bình luận'}
+                </button>
+              </div>
+            </div>
+          )}
 
-          {/* Review list */}
+          {!isAuthenticated && (
+            <p className="font-body-md text-body-md text-on-surface-variant">
+              <Link to="/login" className="text-primary hover:underline">Đăng nhập</Link> để bình luận.
+            </p>
+          )}
+
+          {/* Comment list */}
           <div className="flex flex-col gap-6">
-            {MOCK_REVIEWS.map(review => (
-              <ReviewCard key={review.id} review={review} />
-            ))}
+            {comments.length === 0 ? (
+              <p className="text-on-surface-variant font-body-md text-body-md">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+            ) : (
+              comments.map(c => <CommentCard key={c.commentId} comment={c} />)
+            )}
           </div>
         </section>
 

@@ -1,83 +1,126 @@
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// 1. Quản lý Người dùng & Phân quyền (Chuẩn bị cho Auth & Admin)
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  fullName  String
-  role      Role     @default(USER)    // Phân quyền USER hoặc ADMIN
-  isVerified Boolean @default(false)   // Dành cho Release 2 (Xác minh tài khoản chống spam)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  reviews   Review[] // Mối quan hệ 1-nhiều với Đánh giá (Release 2)
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
-  USER
-  ADMIN
+  Admin
+  Editor
+  RegisteredUser
 }
 
-// 2. Quản lý Danh lam Thắng cảnh (Trọng tâm của Release 1)
-model Landmark {
-  id          Int          @id @default(autoincrement())
-  title       String       @db.VarChar(255)
-  description String       @db.Text
-  content     String       @db.LongText
-  region      Region       // Phân loại Vùng miền (Bắc, Trung, Nam) theo FE-3
-  province    String       // Tỉnh/Thành phố phục vụ tìm kiếm bộ lọc
-  status      Status       @default(PUBLISHED) // Status phục vụ tính năng Archive ở Release 2 và Phê duyệt ở Release 3
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  
-  images      Media[]      // Thay vì 1 chuỗi String, dùng table Media để lưu Bộ sưu tập ảnh (Release 1) và Video (Release 3)
-  reviews     Review[]     // Mối quan hệ với Review (Release 2)
+enum PostStatus {
+  Draft
+  Pending
+  Publish
+  Rejected
 }
 
-enum Region {
-  MIEN_BAC
-  MIEN_TRUNG
-  MIEN_NAM
+enum NotificationType {
+  PostApproved
+  PostRejected
+  NewComment
+  PostPending
 }
 
-enum Status {
-  PENDING    // Cho tính năng user đóng góp địa điểm ở Release 3
-  PUBLISHED  // Hiển thị công khai
-  ARCHIVED   // Cho tính năng lưu trữ địa điểm cũ ở Release 2
+model User {
+  userId          String   @id @default(uuid())
+  userName        String   @unique
+  password        String
+  email           String   @unique
+  role            Role     @default(RegisteredUser)
+  avatar          String?
+  avatarPublicId  String?
+  createdAt       DateTime @default(now())
+
+  posts         Post[]
+  comments      Comment[]
+  ratings       Rating[]
+  savedPosts    SavedPost[]
+  notifications Notification[]
 }
 
-// 3. Quản lý Hình ảnh/Video (Hỗ trợ Cloudinary)
-model Media {
-  id         Int      @id @default(autoincrement())
-  url        String   @db.Text
-  type       MediaType @default(IMAGE)
-  landmarkId Int
-  landmark   Landmark @relation(fields: [landmarkId], references: [id], onDelete: Cascade)
+model Location {
+  locationId   String  @id @default(uuid())
+  locationName String
+  description  String?
+  coordinates  String?
+
+  posts Post[]
 }
 
-enum MediaType {
-  IMAGE
-  VIDEO
+model Post {
+  postId          String     @id @default(uuid())
+  authorId        String
+  locationId      String
+  title           String
+  content         String
+  imageUrl        String?
+  imagePublicId   String?
+  status          PostStatus @default(Draft)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  author   User     @relation(fields: [authorId], references: [userId])
+  location Location @relation(fields: [locationId], references: [locationId])
+  comments Comment[]
+  ratings  Rating[]
+  savedBy  SavedPost[]
 }
 
-// 4. Quản lý Đánh giá & Xếp hạng (Xây dựng sẵn cấu trúc cho Release 2)
-model Review {
-  id          Int      @id @default(autoincrement())
-  rating      Int      @default(5) // Thang điểm từ 1 - 5
-  comment     String   @db.Text
-  usefulVotes Int      @default(0)   // Tính năng vote "Hữu ích" ở Release 3
-  createdAt   DateTime @default(now())
-  
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  landmarkId  Int
-  landmark    Landmark @relation(fields: [landmarkId], references: [id], onDelete: Cascade)
+model Comment {
+  commentId String   @id @default(uuid())
+  postId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [postId], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [userId])
+}
+
+model Rating {
+  rateId    String   @id @default(uuid())
+  postId    String
+  userId    String
+  score     Int
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [postId], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [userId])
+
+  @@unique([postId, userId])
+}
+
+model SavedPost {
+  userId  String
+  postId  String
+  savedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [userId])
+  post Post @relation(fields: [postId], references: [postId], onDelete: Cascade)
+
+  @@id([userId, postId])
+}
+
+model Notification {
+  notificationId String           @id @default(uuid())
+  userId         String
+  type           NotificationType
+  postId         String?
+  commentId      String?
+  actorId        String?
+  message        String
+  read           Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }
