@@ -24,6 +24,7 @@ export interface Post {
   title: string
   content: string
   imageUrl: string | null
+  imagePublicId: string | null
   status: PostStatus
   createdAt: string
   updatedAt: string
@@ -66,4 +67,37 @@ export interface SavedPost {
 export interface AuthResponse {
   access_token: string
   user: User
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+  page: number
+  limit: number
+}
+
+export interface CommentWithPost extends Comment {
+  post?: Pick<Post, 'postId' | 'title'>
+}
+
+export type NotificationType = 'PostApproved' | 'PostRejected' | 'NewComment' | 'PostPending'
+
+export interface Notification {
+  notificationId: string
+  userId: string
+  type: NotificationType
+  postId: string | null
+  commentId: string | null
+  actorId: string | null
+  message: string
+  read: boolean
+  createdAt: string
+}
+
+export interface NotificationsPaginated {
+  data: Notification[]
+  total: number
+  page: number
+  limit: number
+  unreadCount: number
 }

@@ -1,23 +1,36 @@
-import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useState, useMemo } from 'react'
+import { Link, useNavigate, Navigate } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
-import { getLandmarks } from '../../services/landmarkService'
-import type { Landmark } from '../../types'
-import { REGION_LABEL } from '../../constants'
+import { postsService } from '../../services/posts.service'
+import { savedPostsService } from '../../services/saved-posts.service'
+import { useAuthStore } from '../../store/authStore'
+import type { Post, SavedPost } from '../../types'
 
-// Use backend data: fetch landmarks and derive featured/trending lists
-const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1400&q=80'
+const DEFAULT_IMG = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80'
 
-// ── Subcomponents ──────────────────────────────────────────────────────────
-function LandmarkCard({ lm }: { lm: Landmark }) {
-  const id = lm.id
-  const name = lm.title
-  const region = REGION_LABEL[lm.region]
-  const rating = lm.reviews?.length ? (lm.reviews.reduce((s, r) => s + r.rating, 0) / lm.reviews.length).toFixed(1) : '—'
-  const reviews = lm.reviews?.length ?? 0
-  const image = lm.images?.[0]?.url ?? PLACEHOLDER_IMAGE
-  const description = lm.description
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60) return `${mins} phút trước`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs} giờ trước`
+  return `${Math.floor(hrs / 24)} ngày trước`
+}
+
+// ── Saved Trip Card ─────────────────────────────────────────────────────────
+function SavedTripCard({
+  savedPost,
+  isSaved,
+  onToggle,
+}: {
+  savedPost: SavedPost
+  isSaved: boolean
+  onToggle: (postId: string, e: React.MouseEvent) => void
+}) {
+  const post = savedPost.post
+  if (!post) return null
   return (
     <Link
       to={`/landmarks/${post.postId}`}
@@ -485,46 +498,46 @@ function PostCard({ post }: { post: Post }) {
 
 // ── Main Page ───────────────────────────────────────────────────────────────
 export default function Home() {
-  const [landmarks, setLandmarks] = useState<Landmark[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
+  const { isAuthenticated, user } = useAuthStore()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = useState('')
 
-  useEffect(() => {
-    let mounted = true
-    getLandmarks()
-      .then(data => {
-        if (mounted) setLandmarks(data)
-      })
-      .catch(() => { })
-      .finally(() => {
-        if (mounted) setLoading(false)
-      })
-    return () => { mounted = false }
-  }, [])
+  const { data: postsResponse, isLoading, isError } = useQuery({
+    queryKey: ['posts', 'Publish', searchQuery],
+    queryFn: () => postsService.fetchPosts({ status: 'Publish', search: searchQuery || undefined }),
+  })
+  const posts = postsResponse?.data ?? []
 
-  const FEATURED = landmarks[0] ? {
-    id: landmarks[0].id,
-    name: landmarks[0].title,
-    rating: landmarks[0].reviews?.length ? (landmarks[0].reviews.reduce((s, r) => s + r.rating, 0) / landmarks[0].reviews.length) : 0,
-    reviewCount: landmarks[0].reviews?.length ?? 0,
-    image: landmarks[0].images?.[0]?.url ?? PLACEHOLDER_IMAGE,
-  } : { id: '0', name: 'Đang tải...', rating: 0, reviewCount: 0, image: PLACEHOLDER_IMAGE }
+  const { data: savedPosts = [] } = useQuery({
+    queryKey: ['saved-posts'],
+    queryFn: savedPostsService.fetchMySavedPosts,
+    enabled: isAuthenticated,
+  })
 
-  const TRENDING = landmarks.slice(0, 12)
+  const savedPostIds = useMemo(
+    () => new Set(savedPosts.map(sp => sp.postId)),
+    [savedPosts],
+  )
 
-  if (loading) {
-    return (
-      <div className="bg-background text-on-background min-h-screen flex flex-col">
-        <TopNavBar />
-        <main className="flex-1 pt-24 pb-16 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
-            <p className="text-label-md text-on-surface-variant">Đang tải...</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    )
+  const handleToggleSave = async (postId: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!isAuthenticated) { navigate('/login'); return }
+    try {
+      await savedPostsService.toggle(postId)
+      queryClient.invalidateQueries({ queryKey: ['saved-posts'] })
+    } catch {
+      // silent
+    }
   }
+
+  if (isAuthenticated && user?.role === 'Admin') {
+    return <Navigate to="/admin" replace />
+  }
+
+  const featured = posts[0]
+  const trending = posts.slice(0, 8)
 
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
@@ -576,6 +589,62 @@ export default function Home() {
               <p className="font-sans text-body-lg text-on-surface-variant mb-8">
                 Những điểm đến tuyệt vời được tuyển chọn phù hợp với phong cách du lịch của bạn.
               </p>
+
+              {featured ? (
+                <Link
+                  to={`/landmarks/${featured.postId}`}
+                  className="relative w-full h-[50vh] md:h-[60vh] rounded-xl overflow-hidden card-shadow block"
+                >
+                  <img
+                    src={featured.imageUrl ?? DEFAULT_IMG}
+                    alt={featured.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#2e3132]/80 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 p-8 w-full">
+                    <span className="bg-secondary-container text-on-secondary-container font-caption text-caption px-3 py-1 rounded-full mb-3 inline-block font-semibold">
+                      Nổi bật
+                    </span>
+                    <h2 className="font-display text-headline-lg text-white mb-2">{featured.title}</h2>
+                    {featured.location && (
+                      <p className="text-white/80 font-body-md text-body-md">
+                        {featured.location.locationName}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ) : (
+                <div className="relative w-full h-[50vh] md:h-[60vh] rounded-xl overflow-hidden card-shadow bg-surface-container flex items-center justify-center">
+                  {isLoading ? (
+                    <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
+                  ) : (
+                    <p className="text-on-surface-variant">Chưa có bài viết nào</p>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* ── Trending Grid ─────────────────────────────────── */}
+            <section className="container-page">
+              <div className="flex justify-between items-end mb-8 border-b border-surface-variant pb-4">
+                <h2 className="font-display text-headline-md text-on-surface">Điểm đến nổi bật</h2>
+              </div>
+
+              {isLoading && (
+                <div className="flex justify-center py-16">
+                  <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
+                </div>
+              )}
+              {isError && (
+                <p className="text-center py-16 text-on-surface-variant">
+                  Không thể tải dữ liệu. Vui lòng thử lại.
+                </p>
+              )}
+              {!isLoading && !isError && trending.length === 0 && (
+                <p className="text-center py-16 text-on-surface-variant">
+                  Chưa có bài viết nào được xuất bản.
+                </p>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
                 {/** Render landmarks fetched from backend */}

@@ -11,6 +11,10 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
+  avatarPublicId?: string;
+
+  @IsOptional()
+  @IsString()
   currentPassword?: string;
 
   @IsOptional()

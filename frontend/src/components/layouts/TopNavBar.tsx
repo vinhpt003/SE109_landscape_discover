@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import NotificationBell from '../notifications/NotificationBell'
 
 interface TopNavBarProps {
   activeRegion?: 'north' | 'central' | 'south'
@@ -78,10 +79,19 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
               Đã lưu
             </Link>
           )}
+          {isAuthenticated && user && (user.role === 'Editor' || user.role === 'Admin') && (
+            <Link
+              to="/my-posts"
+              className="px-3 py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-all"
+            >
+              Bài viết của tôi
+            </Link>
+          )}
         </nav>
 
         {/* ── Actions ───────────────────────────────────────────── */}
         <div className="flex items-center gap-base font-label-md text-label-md">
+          {isAuthenticated && <NotificationBell />}
           {isAuthenticated && user ? (
             <div className="relative" ref={userMenuRef}>
               <button
@@ -125,6 +135,16 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
                       <span className="material-symbols-outlined text-[18px]">favorite</span>
                       Bài viết đã lưu
                     </Link>
+                    {(user.role === 'Editor' || user.role === 'Admin') && (
+                      <Link
+                        to="/my-posts"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors font-label-md text-label-md"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                        Bài viết của tôi
+                      </Link>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-3 px-4 py-2 text-error hover:bg-error-container transition-colors font-label-md text-label-md"
@@ -223,6 +243,16 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
                 <span className="material-symbols-outlined text-[18px]">favorite</span>
                 Bài viết đã lưu
               </Link>
+              {(user.role === 'Editor' || user.role === 'Admin') && (
+                <Link
+                  to="/my-posts"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 py-2 px-1 text-on-surface-variant hover:text-primary font-label-md text-label-md"
+                >
+                  <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                  Bài viết của tôi
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 py-2 px-1 text-error font-label-md text-label-md text-left"

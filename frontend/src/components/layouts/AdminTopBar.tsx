@@ -1,10 +1,33 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../../store/authStore'
+import NotificationBell from '../notifications/NotificationBell'
 
-// ── Component ──────────────────────────────────────────────────────────────
 export default function AdminTopBar() {
   const navigate = useNavigate()
-  const [hasNotification] = useState(true) // demo: có notification chưa đọc
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const { user, logout } = useAuthStore()
+
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [])
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
+  const initials = user?.userName
+    ? user.userName.slice(0, 2).toUpperCase()
+    : 'AD'
 
   return (
     <header className="bg-surface-bright fixed top-0 right-0 w-[calc(100%-16rem)] h-16 flex items-center justify-between px-8 z-10 shadow-ambient border-b border-outline-variant/40 transition-all duration-200">
@@ -35,23 +58,51 @@ export default function AdminTopBar() {
 
         {/* Icon buttons */}
         <div className="flex items-center gap-1">
-          {/* Notifications */}
-          <button className="relative text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors">
-            <span className="material-symbols-outlined">notifications</span>
-            {hasNotification && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full" />
+          <NotificationBell />
+
+          {/* Avatar + dropdown */}
+          <div className="relative ml-1" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              className="w-8 h-8 rounded-full bg-secondary-container overflow-hidden border border-outline-variant flex items-center justify-center text-on-secondary-container font-bold text-caption hover:opacity-80 transition-opacity"
+              aria-label="Tài khoản"
+            >
+              {user?.avatar ? (
+                <img src={user.avatar} alt={user.userName} className="w-full h-full object-cover" />
+              ) : (
+                <span>{initials}</span>
+              )}
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-52 bg-surface-container-lowest rounded-lg shadow-float border border-outline-variant overflow-hidden z-50">
+                <div className="px-4 py-3 border-b border-surface-container">
+                  <p className="font-label-md text-label-md text-on-surface truncate">
+                    {user?.userName ?? 'Admin'}
+                  </p>
+                  <p className="font-caption text-caption text-outline truncate">
+                    {user?.email ?? ''}
+                  </p>
+                </div>
+                <div className="py-1">
+                  <button
+                    disabled
+                    className="w-full flex items-center gap-3 px-4 py-2 text-on-surface-variant/40 cursor-not-allowed font-label-md text-label-md"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">settings</span>
+                    Cài đặt tài khoản
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-error hover:bg-error-container transition-colors font-label-md text-label-md"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">logout</span>
+                    Đăng xuất
+                  </button>
+                </div>
+              </div>
             )}
-          </button>
-
-          {/* Help */}
-          <button className="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors">
-            <span className="material-symbols-outlined">help</span>
-          </button>
-
-          {/* Avatar */}
-          <button className="w-8 h-8 rounded-full bg-secondary-container ml-1 overflow-hidden border border-outline-variant flex items-center justify-center text-on-secondary-container font-bold text-caption">
-            AD
-          </button>
+          </div>
         </div>
       </div>
     </header>

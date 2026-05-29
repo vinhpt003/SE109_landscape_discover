@@ -1,58 +1,72 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
-import { getLandmarks } from '../../../services/landmarkService'
-import httpClient from '../../../services/httpClient'
-import type { Landmark } from '../../../types'
-import { REGION_LABEL } from '../../../constants'
+import { notificationsService } from '../../../services/notifications.service'
+import type { NotificationType } from '../../../types'
 
-// We'll derive KPI/chart/activity data from backend endpoints
-// Fallbacks are used when backend data is not available.
-const DEFAULT_BAR_COLORS = ['#004581', '#006a64', '#e35d5b', '#075fac']
+const NOTI_ICON: Record<NotificationType, { icon: string; iconBg: string; iconColor: string }> = {
+  PostPending: { icon: 'pending', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary' },
+  PostApproved: { icon: 'check_circle', iconBg: 'bg-[#e6f4ea]', iconColor: 'text-secondary' },
+  PostRejected: { icon: 'cancel', iconBg: 'bg-error-container', iconColor: 'text-error' },
+  NewComment: { icon: 'chat', iconBg: 'bg-primary-fixed', iconColor: 'text-primary' },
+}
+
+function formatRelative(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return 'vừa xong'
+  if (min < 60) return `${min} phút trước`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr} giờ trước`
+  const day = Math.floor(hr / 24)
+  if (day < 7) return `${day} ngày trước`
+  return new Date(iso).toLocaleDateString('vi-VN')
+}
+
+// ── Mock data ──────────────────────────────────────────────────────────────
+const KPI_CARDS = [
+  {
+    icon: 'landscape',
+    iconBg: 'bg-primary-fixed',
+    iconColor: 'text-primary',
+    label: 'Tổng số danh lam',
+    value: '1,482',
+    badge: { text: '12%', type: 'positive' },
+  },
+  {
+    icon: 'rate_review',
+    iconBg: 'bg-[#fff0e6]',
+    iconColor: 'text-[#e35d5b]',
+    label: 'Đánh giá chờ duyệt',
+    value: '56',
+    badge: { text: 'Cần xử lý', type: 'warning' },
+  },
+  {
+    icon: 'group',
+    iconBg: 'bg-[#e0f2f1]',
+    iconColor: 'text-secondary',
+    label: 'Người dùng hoạt động (30 ngày)',
+    value: '12,405',
+    badge: { text: '4.3%', type: 'positive' },
+  },
+]
+
+const CHART_BARS = [
+  { label: 'Bắc', height: '80%', color: '#004581', value: 400 },
+  { label: 'Trung', height: '45%', color: '#006a64', value: 225 },
+  { label: 'Nam', height: '60%', color: '#e35d5b', value: 300 },
+  { label: 'Đảo', height: '30%', color: '#075fac', value: 150 },
+]
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const [kpiCards, setKpiCards] = useState<any[]>([])
-  const [chartBars, setChartBars] = useState<any[]>([])
-  const [activities, setActivities] = useState<any[]>([])
+  const { data: notiData } = useQuery({
+    queryKey: ['notifications', 'me'],
+    queryFn: () => notificationsService.fetchMine({ limit: 8 }),
+  })
+  const activities = notiData?.data ?? []
 
-  useEffect(() => {
-    let mounted = true
-    Promise.all([getLandmarks(), httpClient.get('/users').then(r => r.data).catch(() => [])])
-      .then(([lands, users]) => {
-        if (!mounted) return
-
-        const total = lands.length
-        const pending = lands.filter((l: Landmark) => l.status === 'PENDING').length
-        const activeUsers = users.length ?? 0
-
-        setKpiCards([
-          { icon: 'landscape', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', label: 'Tổng số danh lam', value: total.toLocaleString(), badge: { text: '', type: 'neutral' } },
-          { icon: 'rate_review', iconBg: 'bg-[#fff0e6]', iconColor: 'text-[#e35d5b]', label: 'Danh lam chờ duyệt', value: pending.toString(), badge: { text: 'Cần xử lý', type: 'warning' } },
-          { icon: 'group', iconBg: 'bg-[#e0f2f1]', iconColor: 'text-secondary', label: 'Người dùng', value: activeUsers.toLocaleString(), badge: { text: '', type: 'neutral' } },
-        ])
-
-        // Chart by region
-        const regions = ['MIEN_BAC', 'MIEN_TRUNG', 'MIEN_NAM']
-        const counts = regions.map(r => lands.filter((l: Landmark) => l.region === r).length)
-        const max = Math.max(...counts, 1)
-        const bars = regions.map((r, i) => ({ label: REGION_LABEL[r as keyof typeof REGION_LABEL], height: `${Math.round((counts[i] / max) * 100)}%`, color: DEFAULT_BAR_COLORS[i] ?? '#999', value: counts[i] }))
-        setChartBars(bars)
-
-        // Activities: derive simple recent items from landmarks
-        const acts = lands.slice(0, 6).map((l: Landmark) => ({
-          icon: 'add_location',
-          iconBg: 'bg-primary-fixed',
-          iconColor: 'text-primary',
-          text: <><span className="font-semibold">{l.title}</span> đã được thêm.</>,
-          time: new Date(l.createdAt).toLocaleString(),
-        }))
-        setActivities(acts)
-      })
-      .catch(() => { })
-    return () => { mounted = false }
-  }, [])
   return (
     <div className="bg-surface min-h-screen flex">
       <AdminSideNav />
@@ -76,7 +90,7 @@ export default function AdminDashboard() {
 
             {/* KPI cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {kpiCards.map((card, i) => (
+              {KPI_CARDS.map((card, i) => (
                 <div
                   key={i}
                   className="bg-surface-container-lowest rounded-xl p-6 card-shadow hover:-translate-y-1 transition-all duration-300 border border-surface-container"
@@ -121,7 +135,7 @@ export default function AdminDashboard() {
                     <span>250</span>
                     <span>0</span>
                   </div>
-                  {chartBars.map(bar => (
+                  {CHART_BARS.map(bar => (
                     <div
                       key={bar.label}
                       className="relative w-16 rounded-t-md hover:opacity-90 transition-opacity group flex items-end justify-center"
@@ -134,7 +148,7 @@ export default function AdminDashboard() {
                   ))}
                 </div>
                 <div className="flex justify-around mt-4 font-caption text-caption text-on-surface-variant pl-8">
-                  {chartBars.map(b => <span key={b.label}>{b.label}</span>)}
+                  {CHART_BARS.map(b => <span key={b.label}>{b.label}</span>)}
                 </div>
               </div>
 
@@ -148,17 +162,39 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-6 flex-1 overflow-y-auto">
-                  {activities.map((act, i) => (
-                    <div key={i} className="flex gap-4 items-start">
-                      <div className={`w-8 h-8 rounded-full ${act.iconBg} flex items-center justify-center ${act.iconColor} shrink-0 mt-1`}>
-                        <span className="material-symbols-outlined text-[16px]">{act.icon}</span>
-                      </div>
-                      <div>
-                        <p className="font-body-md text-sm text-on-surface">{act.text}</p>
-                        <p className="font-caption text-caption text-on-surface-variant mt-1">{act.time}</p>
-                      </div>
+                  {activities.length === 0 && (
+                    <div className="text-center py-8 text-on-surface-variant">
+                      <span className="material-symbols-outlined text-[40px] opacity-40">notifications_off</span>
+                      <p className="font-body-md text-sm mt-2">Chưa có hoạt động nào</p>
                     </div>
-                  ))}
+                  )}
+                  {activities.map(n => {
+                    const meta = NOTI_ICON[n.type]
+                    const link =
+                      n.type === 'PostPending' && n.postId
+                        ? `/admin/landmarks?status=Pending&focus=${n.postId}`
+                        : n.postId
+                          ? `/landmarks/${n.postId}`
+                          : '#'
+                    return (
+                      <Link
+                        key={n.notificationId}
+                        to={link}
+                        className={`flex gap-4 items-start hover:bg-surface-container-low rounded-lg p-2 -mx-2 transition-colors ${!n.read ? 'bg-primary-fixed/20' : ''
+                          }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full ${meta.iconBg} flex items-center justify-center ${meta.iconColor} shrink-0 mt-1`}>
+                          <span className="material-symbols-outlined text-[16px]">{meta.icon}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-body-md text-sm text-on-surface line-clamp-2">{n.message}</p>
+                          <p className="font-caption text-caption text-on-surface-variant mt-1">
+                            {formatRelative(n.createdAt)}
+                          </p>
+                        </div>
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
             </div>

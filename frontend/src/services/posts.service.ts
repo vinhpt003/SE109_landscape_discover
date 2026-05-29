@@ -1,15 +1,28 @@
 import api from './api'
-import type { Post, PostStatus } from '../types'
+import type { Post, PostStatus, PaginatedResponse } from '../types'
 
 interface PostsParams {
   search?: string
   locationId?: string
+  status?: PostStatus | 'all'
+  page?: number
+  limit?: number
+}
+
+interface MyPostsParams {
   status?: PostStatus
+  page?: number
+  limit?: number
 }
 
 export const postsService = {
-  async fetchPosts(params?: PostsParams): Promise<Post[]> {
-    const { data } = await api.get<Post[]>('/posts', { params })
+  async fetchPosts(params?: PostsParams): Promise<PaginatedResponse<Post>> {
+    const { data } = await api.get<PaginatedResponse<Post>>('/posts', { params })
+    return data
+  },
+
+  async fetchMyPosts(params?: MyPostsParams): Promise<PaginatedResponse<Post>> {
+    const { data } = await api.get<PaginatedResponse<Post>>('/posts/mine', { params })
     return data
   },
 
@@ -18,12 +31,22 @@ export const postsService = {
     return data
   },
 
-  async createPost(payload: { locationId: string; title: string; content: string; imageUrl?: string }): Promise<Post> {
+  async createPost(payload: {
+    locationId: string
+    title: string
+    content: string
+    imageUrl?: string
+    imagePublicId?: string
+    status?: PostStatus
+  }): Promise<Post> {
     const { data } = await api.post<Post>('/posts', payload)
     return data
   },
 
-  async updatePost(id: string, payload: Partial<{ title: string; content: string; imageUrl: string }>): Promise<Post> {
+  async updatePost(
+    id: string,
+    payload: Partial<{ title: string; content: string; imageUrl: string | null; imagePublicId: string | null }>,
+  ): Promise<Post> {
     const { data } = await api.patch<Post>(`/posts/${id}`, payload)
     return data
   },

@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { PostStatus } from '@prisma/client';
 
 export class CreatePostDto {
   @IsUUID()
@@ -16,4 +17,12 @@ export class CreatePostDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  imagePublicId?: string;
+
+  @IsOptional()
+  @IsEnum(PostStatus, { message: 'Trạng thái không hợp lệ' })
+  status?: PostStatus;
 }

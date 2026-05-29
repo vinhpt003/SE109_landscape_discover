@@ -12,10 +12,19 @@ const Profile = lazy(() => import('./pages/Profile'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
 
+// ── Search ─────────────────────────────────────────────────────────
+const Search = lazy(() => import('./pages/Search'))
+
+// ── Editor / My Posts ──────────────────────────────────────────────
+const MyPosts     = lazy(() => import('./pages/MyPosts'))
+const EditMyPost  = lazy(() => import('./pages/MyPosts/EditMyPost'))
+
 // ── Admin pages ────────────────────────────────────────────────────
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'))
 const AdminLandmarks = lazy(() => import('./pages/Admin/Landmarks'))
 const AdminEditLandmark = lazy(() => import('./pages/Admin/Landmarks/EditLandmark'))
+const AdminUsers        = lazy(() => import('./pages/Admin/Users'))
+const AdminComments     = lazy(() => import('./pages/Admin/Comments'))
 
 // ── 404 ────────────────────────────────────────────────────────────
 const NotFound = lazy(() => import('./pages/NotFound'))
@@ -40,6 +49,7 @@ export default function App() {
           {/* ── Trang người dùng (public) ─────────────────────── */}
           <Route path="/" element={<Home />} />
           <Route path="/landmarks/:id" element={<LandmarkDetail />} />
+          <Route path="/search"        element={<Search />} />
 
           {/* ── Auth ─────────────────────────────────────────── */}
           <Route path="/login" element={<Login />} />
@@ -51,12 +61,21 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
           </Route>
 
+          {/* ── Editor + Admin (My Posts) ─────────────────────── */}
+          <Route element={<ProtectedRoute roles={['Editor', 'Admin']} />}>
+            <Route path="/my-posts"             element={<MyPosts />} />
+            <Route path="/my-posts/new"         element={<EditMyPost />} />
+            <Route path="/my-posts/:id/edit"    element={<EditMyPost />} />
+          </Route>
+
           {/* ── Admin (Admin role only) ───────────────────────── */}
           <Route element={<ProtectedRoute roles={['Admin']} />}>
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/landmarks" element={<AdminLandmarks />} />
             <Route path="/admin/landmarks/new" element={<AdminEditLandmark />} />
             <Route path="/admin/landmarks/:id/edit" element={<AdminEditLandmark />} />
+            <Route path="/admin/users"              element={<AdminUsers />} />
+            <Route path="/admin/comments"           element={<AdminComments />} />
           </Route>
 
           {/* ── 404 ───────────────────────────────────────────── */}

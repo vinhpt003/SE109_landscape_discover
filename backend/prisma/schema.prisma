@@ -21,19 +21,28 @@ enum PostStatus {
   Rejected
 }
 
-model User {
-  userId    String   @id @default(uuid())
-  userName  String   @unique
-  password  String
-  email     String   @unique
-  role      Role     @default(RegisteredUser)
-  avatar    String?
-  createdAt DateTime @default(now())
+enum NotificationType {
+  PostApproved
+  PostRejected
+  NewComment
+  PostPending
+}
 
-  posts      Post[]
-  comments   Comment[]
-  ratings    Rating[]
-  savedPosts SavedPost[]
+model User {
+  userId          String   @id @default(uuid())
+  userName        String   @unique
+  password        String
+  email           String   @unique
+  role            Role     @default(RegisteredUser)
+  avatar          String?
+  avatarPublicId  String?
+  createdAt       DateTime @default(now())
+
+  posts         Post[]
+  comments      Comment[]
+  ratings       Rating[]
+  savedPosts    SavedPost[]
+  notifications Notification[]
 }
 
 model Location {
@@ -46,15 +55,16 @@ model Location {
 }
 
 model Post {
-  postId     String     @id @default(uuid())
-  authorId   String
-  locationId String
-  title      String
-  content    String
-  imageUrl   String?
-  status     PostStatus @default(Draft)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  postId          String     @id @default(uuid())
+  authorId        String
+  locationId      String
+  title           String
+  content         String
+  imageUrl        String?
+  imagePublicId   String?
+  status          PostStatus @default(Draft)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   author   User     @relation(fields: [authorId], references: [userId])
   location Location @relation(fields: [locationId], references: [locationId])
@@ -96,4 +106,21 @@ model SavedPost {
   post Post @relation(fields: [postId], references: [postId], onDelete: Cascade)
 
   @@id([userId, postId])
+}
+
+model Notification {
+  notificationId String           @id @default(uuid())
+  userId         String
+  type           NotificationType
+  postId         String?
+  commentId      String?
+  actorId        String?
+  message        String
+  read           Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }

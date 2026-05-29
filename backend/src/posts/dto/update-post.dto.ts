@@ -13,6 +13,10 @@ export class UpdatePostDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  imagePublicId?: string;
 }
 
 export class UpdatePostStatusDto {
