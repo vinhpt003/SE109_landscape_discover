@@ -8,16 +8,16 @@ import type { Post, PostStatus } from '../../../types'
 
 // ── Badge ──────────────────────────────────────────────────────────────────
 const STATUS_STYLE: Record<PostStatus, string> = {
-  Publish:  'bg-secondary-container text-on-secondary-container',
-  Draft:    'bg-surface-variant text-on-surface-variant',
-  Pending:  'bg-tertiary-fixed text-on-tertiary-fixed-variant',
+  Publish: 'bg-secondary-container text-on-secondary-container',
+  Draft: 'bg-surface-variant text-on-surface-variant',
+  Pending: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
   Rejected: 'bg-error-container text-on-error-container',
 }
 
 const STATUS_LABEL: Record<PostStatus, string> = {
-  Publish:  'Đã xuất bản',
-  Draft:    'Nháp',
-  Pending:  'Chờ duyệt',
+  Publish: 'Đã xuất bản',
+  Draft: 'Nháp',
+  Pending: 'Chờ duyệt',
   Rejected: 'Từ chối',
 }
 
@@ -194,85 +194,84 @@ export default function AdminLandmarks() {
                     {!isLoading && filtered.map(post => {
                       const isFocused = focusId === post.postId
                       return (
-                      <tr
-                        key={post.postId}
-                        ref={isFocused ? focusRowRef : undefined}
-                        className={`transition-colors group ${
-                          isFocused
-                            ? 'bg-tertiary-fixed/40 ring-2 ring-tertiary animate-pulse-once'
-                            : 'hover:bg-surface-container-low'
-                        }`}
-                      >
-                        <td className="py-4 px-6">
-                          <input
-                            type="checkbox"
-                            checked={selected.has(post.postId)}
-                            onChange={() => toggleSelect(post.postId)}
-                            className="w-4 h-4 rounded border-outline text-primary focus:ring-primary"
-                          />
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="w-12 h-12 rounded-lg overflow-hidden border border-outline-variant bg-surface-container">
-                            {post.imageUrl
-                              ? <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
-                              : <div className="w-full h-full flex items-center justify-center">
+                        <tr
+                          key={post.postId}
+                          ref={isFocused ? focusRowRef : undefined}
+                          className={`transition-colors group ${isFocused
+                              ? 'bg-tertiary-fixed/40 ring-2 ring-tertiary animate-pulse-once'
+                              : 'hover:bg-surface-container-low'
+                            }`}
+                        >
+                          <td className="py-4 px-6">
+                            <input
+                              type="checkbox"
+                              checked={selected.has(post.postId)}
+                              onChange={() => toggleSelect(post.postId)}
+                              className="w-4 h-4 rounded border-outline text-primary focus:ring-primary"
+                            />
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden border border-outline-variant bg-surface-container">
+                              {post.imageUrl
+                                ? <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+                                : <div className="w-full h-full flex items-center justify-center">
                                   <span className="material-symbols-outlined text-outline">image</span>
                                 </div>
-                            }
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 font-label-md text-label-md">
-                          <Link to={`/landmarks/${post.postId}`} className="hover:text-primary transition-colors">
-                            {post.title}
-                          </Link>
-                        </td>
-                        <td className="py-4 px-6 text-on-surface-variant">
-                          {post.location?.locationName ?? '—'}
-                        </td>
-                        <td className="py-4 px-6 text-on-surface-variant">
-                          {post.author?.userName ?? '—'}
-                        </td>
-                        <td className="py-4 px-6">
-                          <StatusBadge status={post.status} />
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {post.status === 'Pending' && (
-                              <>
-                                <button
-                                  onClick={() => approveMutation.mutate({ id: post.postId, status: 'Publish' })}
-                                  className="p-2 text-on-surface-variant hover:text-secondary rounded-full hover:bg-surface-container transition-colors"
-                                  title="Duyệt"
-                                >
-                                  <span className="material-symbols-outlined">check_circle</span>
-                                </button>
-                                <button
-                                  onClick={() => approveMutation.mutate({ id: post.postId, status: 'Rejected' })}
-                                  className="p-2 text-on-surface-variant hover:text-error rounded-full hover:bg-error-container transition-colors"
-                                  title="Từ chối"
-                                >
-                                  <span className="material-symbols-outlined">cancel</span>
-                                </button>
-                              </>
-                            )}
-                            <button
-                              onClick={() => navigate(`/admin/landmarks/${post.postId}/edit`)}
-                              className="p-2 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container transition-colors"
-                              title="Chỉnh sửa"
-                            >
-                              <span className="material-symbols-outlined">edit</span>
-                            </button>
-                            <button
-                              onClick={() => handleDelete(post)}
-                              disabled={deleteMutation.isPending}
-                              className="p-2 text-on-surface-variant hover:text-error rounded-full hover:bg-error-container transition-colors"
-                              title="Xóa"
-                            >
-                              <span className="material-symbols-outlined">delete</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                              }
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 font-label-md text-label-md">
+                            <Link to={`/landmarks/${post.postId}`} className="hover:text-primary transition-colors">
+                              {post.title}
+                            </Link>
+                          </td>
+                          <td className="py-4 px-6 text-on-surface-variant">
+                            {post.location?.locationName ?? '—'}
+                          </td>
+                          <td className="py-4 px-6 text-on-surface-variant">
+                            {post.author?.userName ?? '—'}
+                          </td>
+                          <td className="py-4 px-6">
+                            <StatusBadge status={post.status} />
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {post.status === 'Pending' && (
+                                <>
+                                  <button
+                                    onClick={() => approveMutation.mutate({ id: post.postId, status: 'Publish' })}
+                                    className="p-2 text-on-surface-variant hover:text-secondary rounded-full hover:bg-surface-container transition-colors"
+                                    title="Duyệt"
+                                  >
+                                    <span className="material-symbols-outlined">check_circle</span>
+                                  </button>
+                                  <button
+                                    onClick={() => approveMutation.mutate({ id: post.postId, status: 'Rejected' })}
+                                    className="p-2 text-on-surface-variant hover:text-error rounded-full hover:bg-error-container transition-colors"
+                                    title="Từ chối"
+                                  >
+                                    <span className="material-symbols-outlined">cancel</span>
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                onClick={() => navigate(`/admin/landmarks/${post.postId}/edit`)}
+                                className="p-2 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container transition-colors"
+                                title="Chỉnh sửa"
+                              >
+                                <span className="material-symbols-outlined">edit</span>
+                              </button>
+                              <button
+                                onClick={() => handleDelete(post)}
+                                disabled={deleteMutation.isPending}
+                                className="p-2 text-on-surface-variant hover:text-error rounded-full hover:bg-error-container transition-colors"
+                                title="Xóa"
+                              >
+                                <span className="material-symbols-outlined">delete</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
                       )
                     })}
 

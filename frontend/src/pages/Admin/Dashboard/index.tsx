@@ -6,10 +6,10 @@ import { notificationsService } from '../../../services/notifications.service'
 import type { NotificationType } from '../../../types'
 
 const NOTI_ICON: Record<NotificationType, { icon: string; iconBg: string; iconColor: string }> = {
-  PostPending:  { icon: 'pending',       iconBg: 'bg-tertiary-fixed',          iconColor: 'text-tertiary' },
-  PostApproved: { icon: 'check_circle',  iconBg: 'bg-[#e6f4ea]',               iconColor: 'text-secondary' },
-  PostRejected: { icon: 'cancel',        iconBg: 'bg-error-container',         iconColor: 'text-error' },
-  NewComment:   { icon: 'chat',          iconBg: 'bg-primary-fixed',           iconColor: 'text-primary' },
+  PostPending: { icon: 'pending', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary' },
+  PostApproved: { icon: 'check_circle', iconBg: 'bg-[#e6f4ea]', iconColor: 'text-secondary' },
+  PostRejected: { icon: 'cancel', iconBg: 'bg-error-container', iconColor: 'text-error' },
+  NewComment: { icon: 'chat', iconBg: 'bg-primary-fixed', iconColor: 'text-primary' },
 }
 
 function formatRelative(iso: string): string {
@@ -53,10 +53,10 @@ const KPI_CARDS = [
 ]
 
 const CHART_BARS = [
-  { label: 'Bắc',    height: '80%', color: '#004581', value: 400 },
-  { label: 'Trung',  height: '45%', color: '#006a64', value: 225 },
-  { label: 'Nam',    height: '60%', color: '#e35d5b', value: 300 },
-  { label: 'Đảo',   height: '30%', color: '#075fac', value: 150 },
+  { label: 'Bắc', height: '80%', color: '#004581', value: 400 },
+  { label: 'Trung', height: '45%', color: '#006a64', value: 225 },
+  { label: 'Nam', height: '60%', color: '#e35d5b', value: 300 },
+  { label: 'Đảo', height: '30%', color: '#075fac', value: 150 },
 ]
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -180,9 +180,8 @@ export default function AdminDashboard() {
                       <Link
                         key={n.notificationId}
                         to={link}
-                        className={`flex gap-4 items-start hover:bg-surface-container-low rounded-lg p-2 -mx-2 transition-colors ${
-                          !n.read ? 'bg-primary-fixed/20' : ''
-                        }`}
+                        className={`flex gap-4 items-start hover:bg-surface-container-low rounded-lg p-2 -mx-2 transition-colors ${!n.read ? 'bg-primary-fixed/20' : ''
+                          }`}
                       >
                         <div className={`w-8 h-8 rounded-full ${meta.iconBg} flex items-center justify-center ${meta.iconColor} shrink-0 mt-1`}>
                           <span className="material-symbols-outlined text-[16px]">{meta.icon}</span>

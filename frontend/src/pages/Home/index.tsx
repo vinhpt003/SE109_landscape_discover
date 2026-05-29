@@ -400,10 +400,10 @@ function RegisteredUserHome({
           {feedPosts.length > 0
             ? feedPosts.map(post => <FeedCard key={post.postId} post={post} />)
             : !isLoadingPosts && (
-                <p className="text-center py-8 text-on-surface-variant font-body-md">
-                  Chưa có bài chia sẻ nào.
-                </p>
-              )}
+              <p className="text-center py-8 text-on-surface-variant font-body-md">
+                Chưa có bài chia sẻ nào.
+              </p>
+            )}
         </section>
       </div>
     </main>

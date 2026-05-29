@@ -10,7 +10,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private cloudinary: CloudinaryService,
-  ) {}
+  ) { }
 
   async findAll(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
@@ -106,7 +106,7 @@ export class UsersService {
       dto.avatarPublicId !== undefined &&
       dto.avatarPublicId !== current.avatarPublicId
     ) {
-      this.cloudinary.deleteByPublicId(current.avatarPublicId).catch(() => {});
+      this.cloudinary.deleteByPublicId(current.avatarPublicId).catch(() => { });
     }
 
     return updated;
