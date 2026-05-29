@@ -44,6 +44,9 @@ describe('PostsController', () => {
         search: 'query',
         locationId: 'loc1',
         status: PostStatus.Publish,
+        page: undefined,
+        limit: undefined,
+        isAdmin: false,
       });
       expect(result).toEqual(mockPosts);
     });
@@ -63,12 +66,12 @@ describe('PostsController', () => {
   describe('create', () => {
     it('should call service.create', async () => {
       const dto = { locationId: 'loc1', title: 'Title', content: 'Content' };
-      const user = { userId: 'user1' };
+      const user = { userId: 'user1', role: 'Editor' };
       const createdPost = { postId: '1', ...dto, authorId: 'user1' };
       service.create.mockResolvedValue(createdPost);
 
       const result = await controller.create(dto, user);
-      expect(service.create).toHaveBeenCalledWith(dto, 'user1');
+      expect(service.create).toHaveBeenCalledWith(dto, 'user1', 'Editor');
       expect(result).toEqual(createdPost);
     });
   });
@@ -92,8 +95,8 @@ describe('PostsController', () => {
       const updatedPost = { postId: '1', status: PostStatus.Publish };
       service.updateStatus.mockResolvedValue(updatedPost);
 
-      const result = await controller.updateStatus('1', dto);
-      expect(service.updateStatus).toHaveBeenCalledWith('1', dto);
+      const result = await controller.updateStatus('1', dto, { userId: 'admin1' });
+      expect(service.updateStatus).toHaveBeenCalledWith('1', dto, 'admin1');
       expect(result).toEqual(updatedPost);
     });
   });

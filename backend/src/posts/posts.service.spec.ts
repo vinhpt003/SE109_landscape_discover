@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PostsService } from './posts.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PostStatus } from '@prisma/client';
 
@@ -15,7 +17,23 @@ describe('PostsService', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn(),
     },
+    user: {
+      findMany: jest.fn(),
+    },
+    notification: {
+      updateMany: jest.fn(),
+    },
+  };
+
+  const mockNotifications = {
+    create: jest.fn().mockResolvedValue(true),
+    createMany: jest.fn().mockResolvedValue(true),
+  };
+
+  const mockCloudinary = {
+    deleteByPublicId: jest.fn().mockResolvedValue(true),
   };
 
   beforeEach(async () => {
@@ -23,6 +41,8 @@ describe('PostsService', () => {
       providers: [
         PostsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: NotificationsService, useValue: mockNotifications },
+        { provide: CloudinaryService, useValue: mockCloudinary },
       ],
     }).compile();
 
@@ -44,6 +64,7 @@ describe('PostsService', () => {
         { postId: '1', title: 'Post 1', status: PostStatus.Publish },
       ];
       prisma.post.findMany.mockResolvedValue(mockPosts);
+      prisma.post.count.mockResolvedValue(1);
 
       const result = await service.findAll({});
       expect(prisma.post.findMany).toHaveBeenCalledWith({
@@ -56,13 +77,16 @@ describe('PostsService', () => {
           _count: { select: { comments: true, ratings: true } },
         },
         orderBy: { createdAt: 'desc' },
+        skip: 0,
+        take: 12,
       });
-      expect(result).toEqual(mockPosts);
+      expect(result).toEqual({ data: mockPosts, total: 1, page: 1, limit: 12 });
     });
 
     it('should filter posts by search and locationId', async () => {
       prisma.post.findMany.mockResolvedValue([]);
-      await service.findAll({ search: 'query', locationId: 'loc1', status: PostStatus.Pending });
+      prisma.post.count.mockResolvedValue(0);
+      const result = await service.findAll({ search: 'query', locationId: 'loc1', status: PostStatus.Pending, isAdmin: true });
 
       expect(prisma.post.findMany).toHaveBeenCalledWith({
         where: {
@@ -79,7 +103,10 @@ describe('PostsService', () => {
           _count: { select: { comments: true, ratings: true } },
         },
         orderBy: { createdAt: 'desc' },
+        skip: 0,
+        take: 12,
       });
+      expect(result).toEqual({ data: [], total: 0, page: 1, limit: 12 });
     });
   });
 
@@ -138,7 +165,7 @@ describe('PostsService', () => {
       const createdPost = { postId: '1', ...dto, authorId: 'user1' };
       prisma.post.create.mockResolvedValue(createdPost);
 
-      const result = await service.create(dto, 'user1');
+      const result = await service.create(dto, 'user1', 'RegisteredUser');
       expect(prisma.post.create).toHaveBeenCalledWith({
         data: { ...dto, authorId: 'user1' },
         include: {
@@ -186,10 +213,10 @@ describe('PostsService', () => {
 
   describe('updateStatus', () => {
     it('should update status and return post', async () => {
-      prisma.post.findUnique.mockResolvedValue({ postId: '1' });
+      prisma.post.findUnique.mockResolvedValue({ postId: '1', authorId: 'user1', author: { userId: 'user1', userName: 'author' } });
       prisma.post.update.mockResolvedValue({ postId: '1', status: PostStatus.Publish });
 
-      const result = await service.updateStatus('1', { status: PostStatus.Publish });
+      const result = await service.updateStatus('1', { status: PostStatus.Publish }, 'admin1');
       expect(prisma.post.update).toHaveBeenCalledWith({
         where: { postId: '1' },
         data: { status: PostStatus.Publish },
@@ -199,7 +226,7 @@ describe('PostsService', () => {
 
     it('should throw NotFoundException if post not found', async () => {
       prisma.post.findUnique.mockResolvedValue(null);
-      await expect(service.updateStatus('1', { status: PostStatus.Publish })).rejects.toThrow(NotFoundException);
+      await expect(service.updateStatus('1', { status: PostStatus.Publish }, 'admin1')).rejects.toThrow(NotFoundException);
     });
   });
 

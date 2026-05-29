@@ -8,6 +8,7 @@ describe('CommentsController', () => {
 
   const mockCommentsService = {
     findByPost: jest.fn(),
+    findAll: jest.fn(),
     create: jest.fn(),
     remove: jest.fn(),
   };
@@ -30,13 +31,27 @@ describe('CommentsController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('findByPost', () => {
-    it('should call service.findByPost', async () => {
+  describe('findAll', () => {
+    it('should call service.findByPost if user is not Admin and postId is provided', async () => {
       const mockComments = [{ commentId: '1', content: 'comment' }];
       service.findByPost.mockResolvedValue(mockComments);
 
-      const result = await controller.findByPost('post1');
+      const result = await controller.findAll('post1', undefined, undefined, undefined, { userId: '1', role: 'RegisteredUser' });
       expect(service.findByPost).toHaveBeenCalledWith('post1');
+      expect(result).toEqual(mockComments);
+    });
+
+    it('should call service.findAll if user is Admin', async () => {
+      const mockComments = [{ commentId: '1', content: 'comment' }];
+      service.findAll.mockResolvedValue(mockComments);
+
+      const result = await controller.findAll('post1', 'user1', '1', '10', { userId: '1', role: 'Admin' });
+      expect(service.findAll).toHaveBeenCalledWith({
+        postId: 'post1',
+        userId: 'user1',
+        page: 1,
+        limit: 10,
+      });
       expect(result).toEqual(mockComments);
     });
   });

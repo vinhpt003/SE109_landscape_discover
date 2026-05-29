@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommentsService } from './comments.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('CommentsService', () => {
@@ -16,11 +17,16 @@ describe('CommentsService', () => {
     },
   };
 
+  const mockNotifications = {
+    create: jest.fn().mockResolvedValue(true),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CommentsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: NotificationsService, useValue: mockNotifications },
       ],
     }).compile();
 
@@ -56,13 +62,22 @@ describe('CommentsService', () => {
   describe('create', () => {
     it('should create and return comment', async () => {
       const dto = { postId: 'post1', content: 'hello' };
-      const mockComment = { commentId: '1', ...dto, userId: 'user1' };
+      const mockComment = {
+        commentId: '1',
+        ...dto,
+        userId: 'user1',
+        post: { postId: 'post1', authorId: 'user2', title: 'Post Title' },
+        user: { userId: 'user1', userName: 'user1', avatar: null },
+      };
       prisma.comment.create.mockResolvedValue(mockComment);
 
       const result = await service.create(dto, 'user1');
       expect(prisma.comment.create).toHaveBeenCalledWith({
         data: { postId: 'post1', content: 'hello', userId: 'user1' },
-        include: { user: { select: { userId: true, userName: true, avatar: true } } },
+        include: {
+          user: { select: { userId: true, userName: true, avatar: true } },
+          post: { select: { postId: true, authorId: true, title: true } },
+        },
       });
       expect(result).toEqual(mockComment);
     });

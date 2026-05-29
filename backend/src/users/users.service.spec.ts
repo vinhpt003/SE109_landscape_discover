@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { ConflictException, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -12,10 +13,22 @@ describe('UsersService', () => {
 
   const mockPrisma = {
     user: {
-      findUnique: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({
+        userId: '1',
+        userName: 'testuser',
+        email: 'test@example.com',
+        role: 'RegisteredUser',
+        avatar: null,
+        password: 'hashedCurrentPassword',
+        createdAt: new Date(),
+      }),
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+  };
+
+  const mockCloudinary = {
+    deleteByPublicId: jest.fn().mockResolvedValue(true),
   };
 
   beforeEach(async () => {
@@ -23,11 +36,23 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: CloudinaryService, useValue: mockCloudinary },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
     prisma = module.get<PrismaService>(PrismaService);
+
+    // Setup default mock return values before each test
+    prisma.user.findUnique.mockResolvedValue({
+      userId: '1',
+      userName: 'testuser',
+      email: 'test@example.com',
+      role: 'RegisteredUser',
+      avatar: null,
+      password: 'hashedCurrentPassword',
+      createdAt: new Date(),
+    });
   });
 
   afterEach(() => {
