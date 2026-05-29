@@ -647,47 +647,15 @@ export default function Home() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
-                {/** Render landmarks fetched from backend */}
-                {TRENDING.map(lm => (
-                  <LandmarkCard key={lm.id} lm={lm} />
+                {trending.map(post => (
+                  <PostCard key={post.postId} post={post} />
                 ))}
               </div>
             </section>
           </main>
-
-          {/* ── Trending Grid ─────────────────────────────────── */}
-          <section className="container-page">
-            <div className="flex justify-between items-end mb-8 border-b border-surface-variant pb-4">
-              <h2 className="font-display text-headline-md text-on-surface">Điểm đến nổi bật</h2>
-            </div>
-
-            {isLoading && (
-              <div className="flex justify-center py-16">
-                <div className="w-10 h-10 rounded-full border-4 border-primary-fixed border-t-primary animate-spin" />
-              </div>
-            )}
-            {isError && (
-              <p className="text-center py-16 text-on-surface-variant">
-                Không thể tải dữ liệu. Vui lòng thử lại.
-              </p>
-            )}
-            {!isLoading && !isError && trending.length === 0 && (
-              <p className="text-center py-16 text-on-surface-variant">
-                Chưa có bài viết nào được xuất bản.
-              </p>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter">
-              {trending.map(post => (
-                <PostCard key={post.postId} post={post} />
-              ))}
-            </div>
-          </section>
-        </main>
-      <Footer />
-    </>
-  )
-}
-    </div >
+          <Footer />
+        </>
+      )}
+    </div>
   )
 }

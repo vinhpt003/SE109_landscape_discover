@@ -28,16 +28,17 @@ export interface Post {
   status: PostStatus
   createdAt: string
   updatedAt: string
-  images: Media[]
-  reviews?: Review[]
-  hours?: string
-  bestTime?: string
+  author?: Pick<User, 'userId' | 'userName' | 'avatar'>
+  location?: Pick<Location, 'locationId' | 'locationName'>
+  avgRating?: number | null
+  ratingCount?: number
+  _count?: { comments: number; ratings: number }
 }
 
-// Payload gửi lên khi tạo / cập nhật
-export interface CreateLandmarkPayload {
-  title: string
-  description: string
+export interface Comment {
+  commentId: string
+  postId: string
+  userId: string
   content: string
   createdAt: string
   user?: Pick<User, 'userId' | 'userName' | 'avatar'>

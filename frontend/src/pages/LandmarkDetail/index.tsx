@@ -173,12 +173,8 @@ export default function LandmarkDetail() {
 
               <div className="border-t border-surface-variant pt-4 text-body-md text-on-surface-variant">
                 <div className="flex justify-between">
-                  <span>Giờ mở cửa</span>
-                  <span className="text-on-surface font-medium">{lm?.hours ?? '08:00 SA - 18:00 CH (Hàng ngày)'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Thời điểm tốt nhất</span>
-                  <span className="text-on-surface font-medium">{lm?.bestTime ?? 'Quanh năm'}</span>
+                  <span>Tác giả</span>
+                  <span className="text-on-surface font-medium">{post.author?.userName ?? '—'}</span>
                 </div>
               </div>
             </div>
