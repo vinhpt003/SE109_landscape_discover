@@ -1,13 +1,4 @@
-/**
- * Integration tests for AuthController  —  UC-04 (Register) & UC-05 (Login)
- *
- * Runs against an isolated PostgreSQL Testcontainer started by
- * test/setup/global-setup.ts. No data is ever written to the production DB.
- * The container (and all its data) is destroyed after the full test run.
- *
- * Run command:
- *   npm run test:e2e -- --testPathPattern=auth --verbose
- */
+
 import 'dotenv/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
