@@ -111,4 +111,36 @@ describe('CommentsService', () => {
       await expect(service.remove('1', 'user1', 'RegisteredUser')).rejects.toThrow(NotFoundException);
     });
   });
+
+  // ─── Business Rule Tests ─────────────────────────────────────────────────────
+
+  describe('[BR-09] NewComment notification: fires for post author except when commenter is author', () => {
+    it('[BR-09] create() fires a NewComment notification to the post author when commenter differs', async () => {
+      const dto = { postId: 'post1', content: 'Tuyệt vời!' };
+      prisma.comment.create.mockResolvedValue({
+        commentId: 'c1', ...dto, userId: 'commenter1',
+        post: { postId: 'post1', authorId: 'author1', title: 'Ninh Bình' },
+        user: { userId: 'commenter1', userName: 'Minh', avatar: null },
+      });
+
+      await service.create(dto, 'commenter1');
+
+      expect(mockNotifications.create).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'author1', type: 'NewComment' }),
+      );
+    });
+
+    it('[BR-09] create() does not fire a notification when commenter is the post author', async () => {
+      const dto = { postId: 'post1', content: 'My own post comment' };
+      prisma.comment.create.mockResolvedValue({
+        commentId: 'c2', ...dto, userId: 'author1',
+        post: { postId: 'post1', authorId: 'author1', title: 'Tây Nguyên' },
+        user: { userId: 'author1', userName: 'Author', avatar: null },
+      });
+
+      await service.create(dto, 'author1');
+
+      expect(mockNotifications.create).not.toHaveBeenCalled();
+    });
+  });
 });

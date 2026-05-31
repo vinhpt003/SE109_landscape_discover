@@ -93,4 +93,41 @@ describe('SavedPostsService', () => {
       expect(result).toEqual(mockSaved);
     });
   });
+
+  // ─── Business Rule Tests ─────────────────────────────────────────────────────
+
+  describe('[BR-16 & BR-17] Bookmark rules: authenticated toggle and saved-post list management', () => {
+    it('[BR-16] toggle() creates a SavedPost entry keyed by [userId, postId] (save action)', async () => {
+      prisma.savedPost.findUnique.mockResolvedValue(null);
+      prisma.savedPost.create.mockResolvedValue({});
+
+      const result = await service.toggle('newPost', 'user1');
+
+      expect(prisma.savedPost.create).toHaveBeenCalledWith({ data: { userId: 'user1', postId: 'newPost' } });
+      expect(result).toEqual({ saved: true });
+    });
+
+    it('[BR-17] toggle() removes the SavedPost entry when the post is already saved (unsave action)', async () => {
+      prisma.savedPost.findUnique.mockResolvedValue({ userId: 'user1', postId: 'existingPost' });
+      prisma.savedPost.delete.mockResolvedValue({});
+
+      const result = await service.toggle('existingPost', 'user1');
+
+      expect(prisma.savedPost.delete).toHaveBeenCalledWith({
+        where: { userId_postId: { userId: 'user1', postId: 'existingPost' } },
+      });
+      expect(result).toEqual({ saved: false });
+    });
+
+    it('[BR-17] findMyPosts() returns an empty array when the user has no saved posts', async () => {
+      prisma.savedPost.findMany.mockResolvedValue([]);
+
+      const result = await service.findMyPosts('userWithNoSaves');
+
+      expect(result).toEqual([]);
+      expect(prisma.savedPost.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'userWithNoSaves' } }),
+      );
+    });
+  });
 });

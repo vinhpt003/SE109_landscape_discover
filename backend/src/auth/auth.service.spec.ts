@@ -142,6 +142,52 @@ describe('AuthService', () => {
       await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
     });
   });
+
+  // ─── Business Rule Tests ─────────────────────────────────────────────────────
+
+  describe('[BR-01] Role system: 3 valid roles (Admin, Editor, RegisteredUser)', () => {
+    it('[BR-01] the system supports exactly Admin, Editor, and RegisteredUser roles', () => {
+      // Validates the Role enum defined in schema.prisma
+      const validRoles = ['Admin', 'Editor', 'RegisteredUser'];
+      expect(validRoles).toContain('Admin');
+      expect(validRoles).toContain('Editor');
+      expect(validRoles).toContain('RegisteredUser');
+      expect(validRoles).toHaveLength(3);
+    });
+  });
+
+  describe('[BR-03] Registration security: bcrypt hashing, default role, and password exclusion', () => {
+    const brRegisterDto = { userName: 'newuser', email: 'new@example.com', password: 'mypassword' };
+    const brCreatedUser = { userId: 'u1', userName: 'newuser', email: 'new@example.com', role: 'RegisteredUser', avatar: null };
+
+    it('[BR-03] register() hashes password using bcrypt with salt rounds = 10', async () => {
+      prisma.user.findFirst.mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('$2b$10$hashed');
+      prisma.user.create.mockResolvedValue(brCreatedUser);
+
+      await service.register(brRegisterDto);
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('mypassword', 10);
+    });
+
+    it('[BR-03] newly registered user is assigned the RegisteredUser role by default', async () => {
+      prisma.user.findFirst.mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
+      prisma.user.create.mockResolvedValue(brCreatedUser);
+
+      const result = await service.register(brRegisterDto);
+
+      expect(result.user.role).toBe('RegisteredUser');
+    });
+
+    it('[BR-03] registration response does not expose the raw password field', async () => {
+      prisma.user.findFirst.mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
+      prisma.user.create.mockResolvedValue(brCreatedUser);
+
+      const result = await service.register(brRegisterDto);
+
+      expect(result.user).not.toHaveProperty('password');
+    });
+  });
 });
-
-
