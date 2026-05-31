@@ -250,4 +250,193 @@ describe('PostsService', () => {
       await expect(service.remove('1', 'user1', 'RegisteredUser')).rejects.toThrow(NotFoundException);
     });
   });
+
+  // ─── Business Rule Tests ─────────────────────────────────────────────────────
+
+  describe('[BR-05] Post status enum: Draft, Pending, Publish, Rejected', () => {
+    it('[BR-05] PostStatus enum contains all four required workflow values', () => {
+      expect(PostStatus.Draft).toBe('Draft');
+      expect(PostStatus.Pending).toBe('Pending');
+      expect(PostStatus.Publish).toBe('Publish');
+      expect(PostStatus.Rejected).toBe('Rejected');
+    });
+  });
+
+  describe('[BR-06] Post approval workflow: status transitions send notifications to author', () => {
+    it('[BR-06] updateStatus() to Publish fires a PostApproved notification to the post author', async () => {
+      prisma.post.findUnique.mockResolvedValue({
+        postId: 'p1', title: 'Hội An', authorId: 'author1', status: PostStatus.Pending,
+        author: { userId: 'author1', userName: 'Nguyễn A' },
+      });
+      prisma.post.update.mockResolvedValue({ postId: 'p1', status: PostStatus.Publish });
+      prisma.notification.updateMany.mockResolvedValue({ count: 0 });
+
+      await service.updateStatus('p1', { status: PostStatus.Publish }, 'admin1');
+
+      expect(mockNotifications.create).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'author1', type: 'PostApproved', postId: 'p1' }),
+      );
+    });
+
+    it('[BR-06] updateStatus() to Rejected fires a PostRejected notification to the post author', async () => {
+      prisma.post.findUnique.mockResolvedValue({
+        postId: 'p2', title: 'Đà Lạt', authorId: 'author2', status: PostStatus.Pending,
+        author: { userId: 'author2', userName: 'Trần B' },
+      });
+      prisma.post.update.mockResolvedValue({ postId: 'p2', status: PostStatus.Rejected });
+      prisma.notification.updateMany.mockResolvedValue({ count: 0 });
+
+      await service.updateStatus('p2', { status: PostStatus.Rejected }, 'admin1');
+
+      expect(mockNotifications.create).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'author2', type: 'PostRejected', postId: 'p2' }),
+      );
+    });
+
+    it('[BR-06] create() as Editor with Pending status notifies all Admin users via createMany', async () => {
+      const createdPost = {
+        postId: 'p3', title: 'Sa Pa', status: PostStatus.Pending, authorId: 'editor1',
+        author: { userId: 'editor1', userName: 'Lê C' },
+        location: { locationId: 'loc1', locationName: 'Lào Cai' },
+      };
+      prisma.post.create.mockResolvedValue(createdPost);
+      prisma.user.findMany.mockResolvedValue([{ userId: 'admin1' }, { userId: 'admin2' }]);
+
+      await service.create(
+        { locationId: 'loc1', title: 'Sa Pa', content: 'Content', status: PostStatus.Pending },
+        'editor1',
+        'Editor',
+      );
+
+      expect(mockNotifications.createMany).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ userId: 'admin1', type: 'PostPending' }),
+          expect.objectContaining({ userId: 'admin2', type: 'PostPending' }),
+        ]),
+      );
+    });
+  });
+
+  describe('[BR-07] Post creation requires title, content, and locationId', () => {
+    it('[BR-07] create() persists title, content, locationId, and authorId to the database', async () => {
+      const dto = { locationId: 'loc1', title: 'Phong Nha', content: 'Hang động đẹp nhất VN.', status: PostStatus.Pending };
+      const createdPost = {
+        ...dto, postId: 'p1', authorId: 'editor1',
+        author: { userId: 'editor1', userName: 'Lê C' },
+        location: { locationId: 'loc1', locationName: 'Quảng Bình' },
+      };
+      prisma.post.create.mockResolvedValue(createdPost);
+      prisma.user.findMany.mockResolvedValue([{ userId: 'admin1' }]);
+
+      const result = await service.create(dto, 'editor1', 'Editor');
+
+      expect(prisma.post.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            title: 'Phong Nha',
+            content: 'Hang động đẹp nhất VN.',
+            locationId: 'loc1',
+            authorId: 'editor1',
+          }),
+        }),
+      );
+      expect(result.title).toBe('Phong Nha');
+    });
+  });
+
+  describe('[BR-14] Case-insensitive keyword search across title and content', () => {
+    it('[BR-14] findAll() applies mode:insensitive to both title and content OR clauses', async () => {
+      prisma.post.findMany.mockResolvedValue([]);
+      prisma.post.count.mockResolvedValue(0);
+
+      await service.findAll({ search: 'Hội An' });
+
+      expect(prisma.post.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: [
+              { title: { contains: 'Hội An', mode: 'insensitive' } },
+              { content: { contains: 'Hội An', mode: 'insensitive' } },
+            ],
+          }),
+        }),
+      );
+    });
+
+    it('[BR-14] findAll() with no search term omits the OR filter entirely', async () => {
+      prisma.post.findMany.mockResolvedValue([]);
+      prisma.post.count.mockResolvedValue(0);
+
+      await service.findAll({});
+
+      const callArg = prisma.post.findMany.mock.calls[0][0];
+      expect(callArg.where).not.toHaveProperty('OR');
+    });
+  });
+
+  describe('[BR-15] Location-based post filtering by locationId', () => {
+    it('[BR-15] findAll() includes locationId in the where clause when provided', async () => {
+      prisma.post.findMany.mockResolvedValue([]);
+      prisma.post.count.mockResolvedValue(0);
+
+      await service.findAll({ locationId: 'loc-hue' });
+
+      expect(prisma.post.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ locationId: 'loc-hue' }),
+        }),
+      );
+    });
+
+    it('[BR-15] findAll() omits locationId from the where clause when not provided', async () => {
+      prisma.post.findMany.mockResolvedValue([]);
+      prisma.post.count.mockResolvedValue(0);
+
+      await service.findAll({});
+
+      const callArg = prisma.post.findMany.mock.calls[0][0];
+      expect(callArg.where).not.toHaveProperty('locationId');
+    });
+  });
+
+  describe('[BR-18] Admin-only post status update writes to the database', () => {
+    it('[BR-18] updateStatus() calls prisma.post.update with the new status value', async () => {
+      prisma.post.findUnique.mockResolvedValue({
+        postId: 'p1', title: 'T', authorId: 'u1',
+        author: { userId: 'u1', userName: 'U' },
+      });
+      prisma.post.update.mockResolvedValue({ postId: 'p1', status: PostStatus.Publish });
+      prisma.notification.updateMany.mockResolvedValue({ count: 0 });
+
+      await service.updateStatus('p1', { status: PostStatus.Publish }, 'admin1');
+
+      expect(prisma.post.update).toHaveBeenCalledWith({
+        where: { postId: 'p1' },
+        data: { status: PostStatus.Publish },
+      });
+    });
+  });
+
+  describe('[BR-19] Admin can delete any post; image cleanup runs when imagePublicId is set', () => {
+    it('[BR-19] Admin can delete a post authored by another user without ForbiddenException', async () => {
+      prisma.post.findUnique.mockResolvedValue({ postId: 'p1', authorId: 'user1', imagePublicId: null });
+      prisma.post.delete.mockResolvedValue({ postId: 'p1' });
+
+      const result = await service.remove('p1', 'admin1', 'Admin');
+
+      expect(prisma.post.delete).toHaveBeenCalledWith({ where: { postId: 'p1' } });
+      expect(result.postId).toBe('p1');
+    });
+
+    it('[BR-19] remove() triggers Cloudinary cleanup when imagePublicId is present', async () => {
+      prisma.post.findUnique.mockResolvedValue({
+        postId: 'p1', authorId: 'user1', imagePublicId: 'cloud/img123',
+      });
+      prisma.post.delete.mockResolvedValue({ postId: 'p1' });
+
+      await service.remove('p1', 'admin1', 'Admin');
+
+      expect(mockCloudinary.deleteByPublicId).toHaveBeenCalledWith('cloud/img123');
+    });
+  });
 });
