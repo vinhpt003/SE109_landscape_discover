@@ -1,4 +1,4 @@
-name: Backend Unit Tests
+name: Run Tests
 
 on:
   push:
