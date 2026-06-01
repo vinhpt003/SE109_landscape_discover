@@ -266,8 +266,6 @@ function RegisteredUserHome({
   isLoadingPosts,
   onToggleSave,
   savedPostIds,
-  searchQuery,
-  onSearch,
 }: {
   userName: string
   posts: Post[]
@@ -275,12 +273,14 @@ function RegisteredUserHome({
   isLoadingPosts: boolean
   onToggleSave: (postId: string, e: React.MouseEvent) => void
   savedPostIds: Set<string>
-  searchQuery: string
-  onSearch: (q: string) => void
 }) {
-  const [searchInput, setSearchInput] = useState(searchQuery)
+  const navigate = useNavigate()
+  const [searchInput, setSearchInput] = useState('')
 
-  const handleSearch = () => onSearch(searchInput.trim())
+  const handleSearch = () => {
+    const q = searchInput.trim()
+    navigate(q ? `/search?q=${encodeURIComponent(q)}` : '/search')
+  }
 
   const explorePosts = posts.slice(0, 8)
   const feedPosts = posts.slice(0, 5)
@@ -366,9 +366,7 @@ function RegisteredUserHome({
             </div>
           ) : explorePosts.length === 0 ? (
             <p className="text-center py-8 text-on-surface-variant font-body-md">
-              {searchQuery
-                ? `Không tìm thấy kết quả cho "${searchQuery}".`
-                : 'Chưa có địa điểm nào được xuất bản.'}
+              Chưa có địa điểm nào được xuất bản.
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
@@ -501,11 +499,10 @@ export default function Home() {
   const { isAuthenticated, user } = useAuthStore()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
 
   const { data: postsResponse, isLoading, isError } = useQuery({
-    queryKey: ['posts', 'Publish', searchQuery],
-    queryFn: () => postsService.fetchPosts({ status: 'Publish', search: searchQuery || undefined }),
+    queryKey: ['posts', 'Publish'],
+    queryFn: () => postsService.fetchPosts({ status: 'Publish' }),
   })
   const posts = postsResponse?.data ?? []
 
@@ -552,8 +549,6 @@ export default function Home() {
             isLoadingPosts={isLoading}
             onToggleSave={handleToggleSave}
             savedPostIds={savedPostIds}
-            searchQuery={searchQuery}
-            onSearch={setSearchQuery}
           />
           <footer className="w-full py-8 bg-surface-container-low border-t border-outline-variant pb-24 md:pb-8">
             <div className="container-page flex flex-col md:flex-row justify-between items-center gap-4">

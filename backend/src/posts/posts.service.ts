@@ -35,7 +35,13 @@ export class PostsService {
       ...statusFilter,
       ...(locationId ? { locationId } : {}),
       ...(search
-        ? { OR: [{ title: { contains: search, mode: 'insensitive' as const } }, { content: { contains: search, mode: 'insensitive' as const } }] }
+        ? {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' as const } },
+              { content: { contains: search, mode: 'insensitive' as const } },
+              { location: { locationName: { contains: search, mode: 'insensitive' as const } } },
+            ],
+          }
         : {}),
     };
 

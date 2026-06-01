@@ -33,6 +33,13 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
     setMenuOpen(false)
   }
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = searchValue.trim()
+    navigate(q ? `/search?q=${encodeURIComponent(q)}` : '/search')
+    setMenuOpen(false)
+  }
+
   const navLinkClass = (region: string) =>
     `px-3 py-2 rounded-lg transition-all scale-95 active:scale-90 duration-200 font-label-md text-label-md ` +
     (activeRegion === region
@@ -54,16 +61,21 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center bg-surface-bright border border-outline-variant rounded-full px-4 py-2 focus-within:border-secondary transition-colors w-64 lg:w-96">
-            <span className="material-symbols-outlined text-on-surface-variant mr-2 text-[20px]">search</span>
+          <form
+            onSubmit={handleSearchSubmit}
+            className="hidden md:flex items-center bg-surface-bright border border-outline-variant rounded-full px-4 py-2 focus-within:border-secondary transition-colors w-64 lg:w-96"
+          >
+            <button type="submit" aria-label="Tìm kiếm" className="flex items-center text-on-surface-variant mr-2 hover:text-primary transition-colors">
+              <span className="material-symbols-outlined text-[20px]">search</span>
+            </button>
             <input
               type="text"
-              placeholder="Search landmarks or keywords..."
+              placeholder="Tìm kiếm địa danh, từ khóa..."
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
               className="bg-transparent border-none focus:ring-0 outline-none w-full text-body-md font-body-md text-on-surface placeholder:text-on-surface-variant/60"
             />
-          </div>
+          </form>
         </div>
 
         {/* ── Region nav — desktop ───────────────────────────────── */}
@@ -189,16 +201,21 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
       {/* ── Mobile dropdown ───────────────────────────────────────── */}
       {menuOpen && (
         <div className="md:hidden bg-surface-container-lowest border-t border-outline-variant px-4 py-4 flex flex-col gap-3">
-          <div className="flex items-center bg-surface-container-low border border-outline-variant rounded-full px-4 py-2">
-            <span className="material-symbols-outlined text-on-surface-variant mr-2 text-[20px]">search</span>
+          <form
+            onSubmit={handleSearchSubmit}
+            className="flex items-center bg-surface-container-low border border-outline-variant rounded-full px-4 py-2"
+          >
+            <button type="submit" aria-label="Tìm kiếm" className="flex items-center text-on-surface-variant mr-2 hover:text-primary transition-colors">
+              <span className="material-symbols-outlined text-[20px]">search</span>
+            </button>
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Tìm kiếm địa danh..."
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
               className="bg-transparent border-none focus:ring-0 outline-none w-full text-body-md font-body-md"
             />
-          </div>
+          </form>
           <div className="flex gap-2">
             {['North', 'Central', 'South'].map(r => (
               <NavLink

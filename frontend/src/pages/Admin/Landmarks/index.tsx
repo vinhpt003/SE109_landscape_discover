@@ -35,16 +35,21 @@ export default function AdminLandmarks() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [search, setSearch] = useState('')
 
   const urlStatus = searchParams.get('status') as PostStatus | null
+  const urlQuery = searchParams.get('q') ?? ''
   const focusId = searchParams.get('focus')
+  const [search, setSearch] = useState(urlQuery)
   const [statusFilter, setStatusFilter] = useState<PostStatus | ''>(urlStatus ?? '')
   const focusRowRef = useRef<HTMLTableRowElement | null>(null)
 
   useEffect(() => {
     if (urlStatus && urlStatus !== statusFilter) setStatusFilter(urlStatus)
   }, [urlStatus])
+
+  useEffect(() => {
+    setSearch(urlQuery)
+  }, [urlQuery])
 
   const { data: postsResponse, isLoading } = useQuery({
     queryKey: ['admin-posts', statusFilter],
