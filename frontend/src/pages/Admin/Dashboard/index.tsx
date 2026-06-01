@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
 import { notificationsService } from '../../../services/notifications.service'
-import type { NotificationType } from '../../../types'
+import { statsService } from '../../../services/stats.service'
+import type { NotificationType, Region } from '../../../types'
 
 const NOTI_ICON: Record<NotificationType, { icon: string; iconBg: string; iconColor: string }> = {
   PostPending: { icon: 'pending', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary' },
@@ -24,40 +25,14 @@ function formatRelative(iso: string): string {
   return new Date(iso).toLocaleDateString('vi-VN')
 }
 
-// ── Mock data ──────────────────────────────────────────────────────────────
-const KPI_CARDS = [
-  {
-    icon: 'landscape',
-    iconBg: 'bg-primary-fixed',
-    iconColor: 'text-primary',
-    label: 'Tổng số danh lam',
-    value: '1,482',
-    badge: { text: '12%', type: 'positive' },
-  },
-  {
-    icon: 'rate_review',
-    iconBg: 'bg-[#fff0e6]',
-    iconColor: 'text-[#e35d5b]',
-    label: 'Đánh giá chờ duyệt',
-    value: '56',
-    badge: { text: 'Cần xử lý', type: 'warning' },
-  },
-  {
-    icon: 'group',
-    iconBg: 'bg-[#e0f2f1]',
-    iconColor: 'text-secondary',
-    label: 'Người dùng hoạt động (30 ngày)',
-    value: '12,405',
-    badge: { text: '4.3%', type: 'positive' },
-  },
-]
+// ── Presentation config (CSS giữ như mẫu, value lấy từ API thật) ────────────
+const REGION_META: Record<Region, { label: string; color: string }> = {
+  North: { label: 'Bắc', color: '#004581' },
+  Central: { label: 'Trung', color: '#006a64' },
+  South: { label: 'Nam', color: '#e35d5b' },
+}
 
-const CHART_BARS = [
-  { label: 'Bắc', height: '80%', color: '#004581', value: 400 },
-  { label: 'Trung', height: '45%', color: '#006a64', value: 225 },
-  { label: 'Nam', height: '60%', color: '#e35d5b', value: 300 },
-  { label: 'Đảo', height: '30%', color: '#075fac', value: 150 },
-]
+const formatNumber = (n: number) => n.toLocaleString('vi-VN')
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
@@ -66,6 +41,47 @@ export default function AdminDashboard() {
     queryFn: () => notificationsService.fetchMine({ limit: 8 }),
   })
   const activities = notiData?.data ?? []
+
+  const { data: stats } = useQuery({
+    queryKey: ['admin', 'stats'],
+    queryFn: statsService.fetchDashboard,
+  })
+
+  const kpiCards = [
+    {
+      icon: 'landscape',
+      iconBg: 'bg-primary-fixed',
+      iconColor: 'text-primary',
+      label: 'Tổng số danh lam',
+      value: stats ? formatNumber(stats.totalPosts) : '—',
+      badge: { text: `+${stats?.newPostsLast30d ?? 0} (30 ngày)`, type: 'positive' as const },
+    },
+    {
+      icon: 'rate_review',
+      iconBg: 'bg-[#fff0e6]',
+      iconColor: 'text-[#e35d5b]',
+      label: 'Bài viết chờ duyệt',
+      value: stats ? formatNumber(stats.pendingPosts) : '—',
+      badge: { text: 'Cần xử lý', type: 'warning' as const },
+    },
+    {
+      icon: 'group',
+      iconBg: 'bg-[#e0f2f1]',
+      iconColor: 'text-secondary',
+      label: 'Tổng người dùng',
+      value: stats ? formatNumber(stats.totalUsers) : '—',
+      badge: { text: `+${stats?.newUsersLast30d ?? 0} (30 ngày)`, type: 'positive' as const },
+    },
+  ]
+
+  const regionBars = (stats?.postsByRegion ?? []).map(r => ({
+    label: REGION_META[r.region].label,
+    color: REGION_META[r.region].color,
+    value: r.count,
+  }))
+  const maxRegionCount = Math.max(1, ...regionBars.map(b => b.value))
+  const axisTop = maxRegionCount
+  const axisMid = Math.round(maxRegionCount / 2)
 
   return (
     <div className="bg-surface min-h-screen flex">
@@ -90,7 +106,7 @@ export default function AdminDashboard() {
 
             {/* KPI cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {KPI_CARDS.map((card, i) => (
+              {kpiCards.map((card, i) => (
                 <div
                   key={i}
                   className="bg-surface-container-lowest rounded-xl p-6 card-shadow hover:-translate-y-1 transition-all duration-300 border border-surface-container"
@@ -131,24 +147,30 @@ export default function AdminDashboard() {
                 <div className="h-64 w-full flex items-end justify-around gap-4 pb-4 border-b border-surface-container-highest relative pl-8">
                   {/* Y-axis */}
                   <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-on-surface-variant pb-4">
-                    <span>500</span>
-                    <span>250</span>
+                    <span>{axisTop}</span>
+                    <span>{axisMid}</span>
                     <span>0</span>
                   </div>
-                  {CHART_BARS.map(bar => (
-                    <div
-                      key={bar.label}
-                      className="relative w-16 rounded-t-md hover:opacity-90 transition-opacity group flex items-end justify-center"
-                      style={{ height: bar.height, backgroundColor: bar.color }}
-                    >
-                      <span className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-inverse-surface text-inverse-on-surface px-2 py-1 rounded text-xs transition-opacity whitespace-nowrap">
-                        {bar.value}
-                      </span>
+                  {regionBars.length === 0 ? (
+                    <div className="w-full flex items-center justify-center text-on-surface-variant font-body-md text-sm">
+                      Chưa có dữ liệu
                     </div>
-                  ))}
+                  ) : (
+                    regionBars.map(bar => (
+                      <div
+                        key={bar.label}
+                        className="relative w-16 rounded-t-md hover:opacity-90 transition-opacity group flex items-end justify-center"
+                        style={{ height: `${(bar.value / maxRegionCount) * 100}%`, backgroundColor: bar.color }}
+                      >
+                        <span className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-inverse-surface text-inverse-on-surface px-2 py-1 rounded text-xs transition-opacity whitespace-nowrap">
+                          {bar.value}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
                 <div className="flex justify-around mt-4 font-caption text-caption text-on-surface-variant pl-8">
-                  {CHART_BARS.map(b => <span key={b.label}>{b.label}</span>)}
+                  {regionBars.map(b => <span key={b.label}>{b.label}</span>)}
                 </div>
               </div>
 

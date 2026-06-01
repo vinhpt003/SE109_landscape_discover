@@ -39,10 +39,11 @@ describe('PostsController', () => {
       const mockPosts = [{ postId: '1', title: 'Post' }];
       service.findAll.mockResolvedValue(mockPosts);
 
-      const result = await controller.findAll('query', 'loc1', PostStatus.Publish);
+      const result = await controller.findAll('query', 'loc1', undefined, PostStatus.Publish);
       expect(service.findAll).toHaveBeenCalledWith({
         search: 'query',
         locationId: 'loc1',
+        region: undefined,
         status: PostStatus.Publish,
         page: undefined,
         limit: undefined,

@@ -12,6 +12,7 @@ import { RatingsModule } from './ratings/ratings.module';
 import { SavedPostsModule } from './saved-posts/saved-posts.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { StatsModule } from './stats/stats.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     SavedPostsModule,
     NotificationsModule,
     CloudinaryModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

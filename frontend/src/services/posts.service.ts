@@ -1,9 +1,10 @@
 import api from './api'
-import type { Post, PostStatus, PaginatedResponse } from '../types'
+import type { Post, PostStatus, PaginatedResponse, Region } from '../types'
 
 interface PostsParams {
   search?: string
   locationId?: string
+  region?: Region
   status?: PostStatus | 'all'
   page?: number
   limit?: number

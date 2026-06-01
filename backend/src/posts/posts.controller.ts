@@ -10,7 +10,7 @@ import { JwtOptionalGuard } from '../auth/jwt-optional.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { PostStatus } from '@prisma/client';
+import { PostStatus, Region } from '@prisma/client';
 
 @Controller('posts')
 export class PostsController {
@@ -21,6 +21,7 @@ export class PostsController {
   findAll(
     @Query('search') search?: string,
     @Query('locationId') locationId?: string,
+    @Query('region') region?: Region,
     @Query('status') status?: PostStatus | 'all',
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -29,6 +30,7 @@ export class PostsController {
     return this.postsService.findAll({
       search,
       locationId,
+      region,
       status,
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,

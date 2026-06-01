@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Region } from '@prisma/client';
 
 export class CreateLocationDto {
   @IsString()
@@ -12,4 +13,8 @@ export class CreateLocationDto {
   @IsOptional()
   @IsString()
   coordinates?: string;
+
+  @IsOptional()
+  @IsEnum(Region, { message: 'Vùng miền không hợp lệ' })
+  region?: Region;
 }

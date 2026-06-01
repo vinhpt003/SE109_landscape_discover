@@ -1,18 +1,22 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import NotificationBell from '../notifications/NotificationBell'
 
-interface TopNavBarProps {
-  activeRegion?: 'north' | 'central' | 'south'
-}
+const REGIONS = [
+  { slug: 'north', label: 'Bắc' },
+  { slug: 'central', label: 'Trung' },
+  { slug: 'south', label: 'Nam' },
+] as const
 
-export default function TopNavBar({ activeRegion }: TopNavBarProps) {
+export default function TopNavBar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const activeRegion = searchParams.get('region')
 
   const { isAuthenticated, user, logout } = useAuthStore()
 
@@ -80,9 +84,15 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
 
         {/* ── Region nav — desktop ───────────────────────────────── */}
         <nav className="hidden md:flex items-center gap-1 font-label-md text-label-md">
-          <NavLink to="/?region=north" className={navLinkClass('north')}>North</NavLink>
-          <NavLink to="/?region=central" className={navLinkClass('central')}>Central</NavLink>
-          <NavLink to="/?region=south" className={navLinkClass('south')}>South</NavLink>
+          {REGIONS.map(({ slug, label }) => (
+            <Link
+              key={slug}
+              to={activeRegion === slug ? '/' : `/?region=${slug}`}
+              className={navLinkClass(slug)}
+            >
+              {label}
+            </Link>
+          ))}
           {isAuthenticated && (
             <Link
               to="/saved"
@@ -217,15 +227,20 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
             />
           </form>
           <div className="flex gap-2">
-            {['North', 'Central', 'South'].map(r => (
-              <NavLink
-                key={r}
-                to={`/?region=${r.toLowerCase()}`}
+            {REGIONS.map(({ slug, label }) => (
+              <Link
+                key={slug}
+                to={activeRegion === slug ? '/' : `/?region=${slug}`}
                 onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors font-label-md text-label-md"
+                className={[
+                  'flex-1 text-center py-2 rounded-lg transition-colors font-label-md text-label-md',
+                  activeRegion === slug
+                    ? 'text-secondary bg-surface-container'
+                    : 'text-on-surface-variant hover:text-primary hover:bg-surface-container',
+                ].join(' ')}
               >
-                {r}
-              </NavLink>
+                {label}
+              </Link>
             ))}
           </div>
 

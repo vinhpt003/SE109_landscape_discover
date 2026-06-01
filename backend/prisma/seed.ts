@@ -40,41 +40,49 @@ async function main() {
       locationName: 'Vịnh Hạ Long',
       description:  'Kỳ quan thiên nhiên thế giới với hàng nghìn đảo đá vôi phủ rừng xanh, nằm ở tỉnh Quảng Ninh.',
       coordinates:  '20.9101,107.1839',
+      region:       'North',
     }}),
     prisma.location.create({ data: {
       locationName: 'Phố cổ Hội An',
       description:  'Đô thị cổ giao thương thế kỷ 15–19, được UNESCO công nhận Di sản Thế giới, tỉnh Quảng Nam.',
       coordinates:  '15.8800,108.3380',
+      region:       'Central',
     }}),
     prisma.location.create({ data: {
       locationName: 'Hoàng Thành Huế',
       description:  'Di tích lịch sử Kinh đô triều Nguyễn, công trình kiến trúc đồ sộ giữa lòng Thừa Thiên Huế.',
       coordinates:  '16.4698,107.5796',
+      region:       'Central',
     }}),
     prisma.location.create({ data: {
       locationName: 'Mũi Né – Phan Thiết',
       description:  'Đồi cát trắng, cát đỏ hùng vĩ cùng bãi biển rực rỡ nắng vàng tại Bình Thuận.',
       coordinates:  '10.9333,108.2833',
+      region:       'South',
     }}),
     prisma.location.create({ data: {
       locationName: 'Sa Pa',
       description:  'Thị trấn trong mây với ruộng bậc thang kỳ vĩ và đỉnh Fansipan hùng tráng ở Lào Cai.',
       coordinates:  '22.3363,103.8438',
+      region:       'North',
     }}),
     prisma.location.create({ data: {
       locationName: 'Vườn Quốc gia Phong Nha – Kẻ Bàng',
       description:  'Hệ thống hang động kỳ vĩ nhất thế giới, Di sản UNESCO tại Quảng Bình.',
       coordinates:  '17.5500,106.2833',
+      region:       'Central',
     }}),
     prisma.location.create({ data: {
       locationName: 'Đà Lạt',
       description:  'Thành phố ngàn hoa trên cao nguyên Lâm Viên, nổi tiếng với khí hậu mát mẻ quanh năm.',
       coordinates:  '11.9465,108.4419',
+      region:       'South',
     }}),
     prisma.location.create({ data: {
       locationName: 'Miền Tây Sông Nước',
       description:  'Đồng bằng sông Cửu Long với chợ nổi, vườn trái cây và nét văn hóa sông nước đặc trưng.',
       coordinates:  '10.0341,105.7882',
+      region:       'South',
     }}),
   ]);
 
