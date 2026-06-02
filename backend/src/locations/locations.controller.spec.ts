@@ -33,7 +33,7 @@ describe('LocationsController', () => {
   describe('findAll', () => {
     it('should return list of locations', async () => {
       const mockLocations = [
-        { locationId: '1', locationName: 'A Location' },
+        { locationId: '1', locationName: 'A Location', description: null, coordinates: null, region: 'North' },
       ];
       service.findAll.mockResolvedValue(mockLocations);
 
@@ -45,7 +45,7 @@ describe('LocationsController', () => {
 
   describe('findOne', () => {
     it('should return a single location by ID', async () => {
-      const mockLocation = { locationId: '1', locationName: 'A Location' };
+      const mockLocation = { locationId: '1', locationName: 'A Location', description: null, coordinates: null, region: 'North' };
       service.findOne.mockResolvedValue(mockLocation);
 
       const result = await controller.findOne('1');
@@ -56,8 +56,18 @@ describe('LocationsController', () => {
 
   describe('create', () => {
     it('should create and return a new location', async () => {
-      const dto = { locationName: 'New Location' };
-      const mockLocation = { locationId: '1', locationName: 'New Location' };
+      const dto = { locationName: 'New Location', region: 'South' as const };
+      const mockLocation = { locationId: '1', locationName: 'New Location', description: null, coordinates: null, region: 'South' };
+      service.create.mockResolvedValue(mockLocation);
+
+      const result = await controller.create(dto);
+      expect(service.create).toHaveBeenCalledWith(dto);
+      expect(result).toEqual(mockLocation);
+    });
+
+    it('should create a location without region', async () => {
+      const dto = { locationName: 'No Region Location' };
+      const mockLocation = { locationId: '2', locationName: 'No Region Location', description: null, coordinates: null, region: null };
       service.create.mockResolvedValue(mockLocation);
 
       const result = await controller.create(dto);

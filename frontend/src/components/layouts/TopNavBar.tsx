@@ -1,18 +1,22 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import NotificationBell from '../notifications/NotificationBell'
 
-interface TopNavBarProps {
-  activeRegion?: 'north' | 'central' | 'south'
-}
+const REGIONS = [
+  { slug: 'north', label: 'Bắc' },
+  { slug: 'central', label: 'Trung' },
+  { slug: 'south', label: 'Nam' },
+] as const
 
-export default function TopNavBar({ activeRegion }: TopNavBarProps) {
+export default function TopNavBar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const activeRegion = searchParams.get('region')
 
   const { isAuthenticated, user, logout } = useAuthStore()
 
@@ -30,6 +34,13 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
     logout()
     navigate('/')
     setUserMenuOpen(false)
+    setMenuOpen(false)
+  }
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = searchValue.trim()
+    navigate(q ? `/search?q=${encodeURIComponent(q)}` : '/search')
     setMenuOpen(false)
   }
 
@@ -54,23 +65,34 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center bg-surface-bright border border-outline-variant rounded-full px-4 py-2 focus-within:border-secondary transition-colors w-64 lg:w-96">
-            <span className="material-symbols-outlined text-on-surface-variant mr-2 text-[20px]">search</span>
+          <form
+            onSubmit={handleSearchSubmit}
+            className="hidden md:flex items-center bg-surface-bright border border-outline-variant rounded-full px-4 py-2 focus-within:border-secondary transition-colors w-64 lg:w-96"
+          >
+            <button type="submit" aria-label="Tìm kiếm" className="flex items-center text-on-surface-variant mr-2 hover:text-primary transition-colors">
+              <span className="material-symbols-outlined text-[20px]">search</span>
+            </button>
             <input
               type="text"
-              placeholder="Search landmarks or keywords..."
+              placeholder="Tìm kiếm địa danh, từ khóa..."
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
               className="bg-transparent border-none focus:ring-0 outline-none w-full text-body-md font-body-md text-on-surface placeholder:text-on-surface-variant/60"
             />
-          </div>
+          </form>
         </div>
 
         {/* ── Region nav — desktop ───────────────────────────────── */}
         <nav className="hidden md:flex items-center gap-1 font-label-md text-label-md">
-          <NavLink to="/?region=north" className={navLinkClass('north')}>North</NavLink>
-          <NavLink to="/?region=central" className={navLinkClass('central')}>Central</NavLink>
-          <NavLink to="/?region=south" className={navLinkClass('south')}>South</NavLink>
+          {REGIONS.map(({ slug, label }) => (
+            <Link
+              key={slug}
+              to={activeRegion === slug ? '/' : `/?region=${slug}`}
+              className={navLinkClass(slug)}
+            >
+              {label}
+            </Link>
+          ))}
           {isAuthenticated && (
             <Link
               to="/saved"
@@ -189,26 +211,36 @@ export default function TopNavBar({ activeRegion }: TopNavBarProps) {
       {/* ── Mobile dropdown ───────────────────────────────────────── */}
       {menuOpen && (
         <div className="md:hidden bg-surface-container-lowest border-t border-outline-variant px-4 py-4 flex flex-col gap-3">
-          <div className="flex items-center bg-surface-container-low border border-outline-variant rounded-full px-4 py-2">
-            <span className="material-symbols-outlined text-on-surface-variant mr-2 text-[20px]">search</span>
+          <form
+            onSubmit={handleSearchSubmit}
+            className="flex items-center bg-surface-container-low border border-outline-variant rounded-full px-4 py-2"
+          >
+            <button type="submit" aria-label="Tìm kiếm" className="flex items-center text-on-surface-variant mr-2 hover:text-primary transition-colors">
+              <span className="material-symbols-outlined text-[20px]">search</span>
+            </button>
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Tìm kiếm địa danh..."
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
               className="bg-transparent border-none focus:ring-0 outline-none w-full text-body-md font-body-md"
             />
-          </div>
+          </form>
           <div className="flex gap-2">
-            {['North', 'Central', 'South'].map(r => (
-              <NavLink
-                key={r}
-                to={`/?region=${r.toLowerCase()}`}
+            {REGIONS.map(({ slug, label }) => (
+              <Link
+                key={slug}
+                to={activeRegion === slug ? '/' : `/?region=${slug}`}
                 onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors font-label-md text-label-md"
+                className={[
+                  'flex-1 text-center py-2 rounded-lg transition-colors font-label-md text-label-md',
+                  activeRegion === slug
+                    ? 'text-secondary bg-surface-container'
+                    : 'text-on-surface-variant hover:text-primary hover:bg-surface-container',
+                ].join(' ')}
               >
-                {r}
-              </NavLink>
+                {label}
+              </Link>
             ))}
           </div>
 

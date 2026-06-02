@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto, UpdatePostStatusDto } from './dto/update-post.dto';
-import { PostStatus } from '@prisma/client';
+import { PostStatus, Region } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
@@ -17,12 +17,13 @@ export class PostsService {
   async findAll(query: {
     search?: string;
     locationId?: string;
+    region?: Region;
     status?: PostStatus | 'all';
     page?: number;
     limit?: number;
     isAdmin?: boolean;
   }) {
-    const { search, locationId, status, page = 1, limit = 12, isAdmin = false } = query;
+    const { search, locationId, region, status, page = 1, limit = 12, isAdmin = false } = query;
     const skip = (page - 1) * limit;
 
     let statusFilter: { status?: PostStatus } = { status: PostStatus.Publish };
@@ -34,8 +35,15 @@ export class PostsService {
     const where = {
       ...statusFilter,
       ...(locationId ? { locationId } : {}),
+      ...(region ? { location: { region } } : {}),
       ...(search
-        ? { OR: [{ title: { contains: search, mode: 'insensitive' as const } }, { content: { contains: search, mode: 'insensitive' as const } }] }
+        ? {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' as const } },
+              { content: { contains: search, mode: 'insensitive' as const } },
+              { location: { locationName: { contains: search, mode: 'insensitive' as const } } },
+            ],
+          }
         : {}),
     };
 

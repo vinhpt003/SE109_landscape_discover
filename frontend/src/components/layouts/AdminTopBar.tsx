@@ -6,6 +6,7 @@ import NotificationBell from '../notifications/NotificationBell'
 export default function AdminTopBar() {
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState('')
   const menuRef = useRef<HTMLDivElement>(null)
 
   const { user, logout } = useAuthStore()
@@ -25,6 +26,12 @@ export default function AdminTopBar() {
     navigate('/login')
   }
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = searchValue.trim()
+    navigate(q ? `/admin/landmarks?q=${encodeURIComponent(q)}` : '/admin/landmarks')
+  }
+
   const initials = user?.userName
     ? user.userName.slice(0, 2).toUpperCase()
     : 'AD'
@@ -33,14 +40,21 @@ export default function AdminTopBar() {
     <header className="bg-surface-bright fixed top-0 right-0 w-[calc(100%-16rem)] h-16 flex items-center justify-between px-8 z-10 shadow-ambient border-b border-outline-variant/40 transition-all duration-200">
 
       {/* Search */}
-      <div className="flex items-center bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 w-80 focus-within:border-secondary transition-colors">
-        <span className="material-symbols-outlined text-outline text-[20px]">search</span>
+      <form
+        onSubmit={handleSearchSubmit}
+        className="flex items-center bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 w-80 focus-within:border-secondary transition-colors"
+      >
+        <button type="submit" aria-label="Tìm kiếm" className="flex items-center text-outline hover:text-primary transition-colors">
+          <span className="material-symbols-outlined text-[20px]">search</span>
+        </button>
         <input
           type="text"
-          placeholder="Search..."
+          placeholder="Tìm kiếm địa danh..."
+          value={searchValue}
+          onChange={e => setSearchValue(e.target.value)}
           className="bg-transparent border-none focus:ring-0 w-full font-body-md text-body-md text-on-surface placeholder:text-outline-variant ml-2 outline-none"
         />
-      </div>
+      </form>
 
       {/* Right actions */}
       <div className="flex items-center gap-4">

@@ -1,14 +1,26 @@
 import { useState, useMemo } from 'react'
-import { Link, useNavigate, Navigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams, Navigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import TopNavBar from '../../components/layouts/TopNavBar'
 import Footer from '../../components/layouts/Footer'
 import { postsService } from '../../services/posts.service'
 import { savedPostsService } from '../../services/saved-posts.service'
 import { useAuthStore } from '../../store/authStore'
-import type { Post, SavedPost } from '../../types'
+import type { Post, SavedPost, Region } from '../../types'
 
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80'
+
+// Slug vùng trên URL (?region=north) → enum Region của backend
+const REGION_BY_SLUG: Record<string, Region> = {
+  north: 'North',
+  central: 'Central',
+  south: 'South',
+}
+const REGION_LABEL: Record<Region, string> = {
+  North: 'Bắc',
+  Central: 'Trung',
+  South: 'Nam',
+}
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -266,8 +278,7 @@ function RegisteredUserHome({
   isLoadingPosts,
   onToggleSave,
   savedPostIds,
-  searchQuery,
-  onSearch,
+  regionLabel,
 }: {
   userName: string
   posts: Post[]
@@ -275,12 +286,15 @@ function RegisteredUserHome({
   isLoadingPosts: boolean
   onToggleSave: (postId: string, e: React.MouseEvent) => void
   savedPostIds: Set<string>
-  searchQuery: string
-  onSearch: (q: string) => void
+  regionLabel: string | null
 }) {
-  const [searchInput, setSearchInput] = useState(searchQuery)
+  const navigate = useNavigate()
+  const [searchInput, setSearchInput] = useState('')
 
-  const handleSearch = () => onSearch(searchInput.trim())
+  const handleSearch = () => {
+    const q = searchInput.trim()
+    navigate(q ? `/search?q=${encodeURIComponent(q)}` : '/search')
+  }
 
   const explorePosts = posts.slice(0, 8)
   const feedPosts = posts.slice(0, 5)
@@ -358,7 +372,9 @@ function RegisteredUserHome({
 
         {/* ── Explore Destinations ─────────────────────────────── */}
         <section className="mb-section-gap">
-          <h2 className="font-display text-headline-md text-on-surface mb-8">Khám phá địa điểm</h2>
+          <h2 className="font-display text-headline-md text-on-surface mb-8">
+            {regionLabel ? `Khám phá địa điểm miền ${regionLabel}` : 'Khám phá địa điểm'}
+          </h2>
 
           {isLoadingPosts ? (
             <div className="flex justify-center py-16">
@@ -366,8 +382,8 @@ function RegisteredUserHome({
             </div>
           ) : explorePosts.length === 0 ? (
             <p className="text-center py-8 text-on-surface-variant font-body-md">
-              {searchQuery
-                ? `Không tìm thấy kết quả cho "${searchQuery}".`
+              {regionLabel
+                ? `Chưa có địa điểm nào ở miền ${regionLabel}.`
                 : 'Chưa có địa điểm nào được xuất bản.'}
             </p>
           ) : (
@@ -501,11 +517,14 @@ export default function Home() {
   const { isAuthenticated, user } = useAuthStore()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchParams] = useSearchParams()
+
+  const region = REGION_BY_SLUG[searchParams.get('region') ?? '']
+  const regionLabel = region ? REGION_LABEL[region] : null
 
   const { data: postsResponse, isLoading, isError } = useQuery({
-    queryKey: ['posts', 'Publish', searchQuery],
-    queryFn: () => postsService.fetchPosts({ status: 'Publish', search: searchQuery || undefined }),
+    queryKey: ['posts', 'Publish', region ?? 'all'],
+    queryFn: () => postsService.fetchPosts({ status: 'Publish', region }),
   })
   const posts = postsResponse?.data ?? []
 
@@ -552,8 +571,7 @@ export default function Home() {
             isLoadingPosts={isLoading}
             onToggleSave={handleToggleSave}
             savedPostIds={savedPostIds}
-            searchQuery={searchQuery}
-            onSearch={setSearchQuery}
+            regionLabel={regionLabel}
           />
           <footer className="w-full py-8 bg-surface-container-low border-t border-outline-variant pb-24 md:pb-8">
             <div className="container-page flex flex-col md:flex-row justify-between items-center gap-4">
@@ -627,7 +645,9 @@ export default function Home() {
             {/* ── Trending Grid ─────────────────────────────────── */}
             <section className="container-page">
               <div className="flex justify-between items-end mb-8 border-b border-surface-variant pb-4">
-                <h2 className="font-display text-headline-md text-on-surface">Điểm đến nổi bật</h2>
+                <h2 className="font-display text-headline-md text-on-surface">
+                  {regionLabel ? `Điểm đến nổi bật miền ${regionLabel}` : 'Điểm đến nổi bật'}
+                </h2>
               </div>
 
               {isLoading && (

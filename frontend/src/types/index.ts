@@ -1,5 +1,6 @@
 export type Role = 'Admin' | 'Editor' | 'RegisteredUser'
 export type PostStatus = 'Draft' | 'Pending' | 'Publish' | 'Rejected'
+export type Region = 'North' | 'Central' | 'South'
 
 export interface User {
   userId: string
@@ -15,6 +16,7 @@ export interface Location {
   locationName: string
   description: string | null
   coordinates: string | null
+  region?: Region | null
 }
 
 export interface Post {
@@ -101,4 +103,13 @@ export interface NotificationsPaginated {
   page: number
   limit: number
   unreadCount: number
+}
+
+export interface DashboardStats {
+  totalPosts: number
+  pendingPosts: number
+  totalUsers: number
+  newPostsLast30d: number
+  newUsersLast30d: number
+  postsByRegion: { region: Region; count: number }[]
 }
