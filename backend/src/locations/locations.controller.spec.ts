@@ -10,6 +10,8 @@ describe('LocationsController', () => {
     findAll: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -73,6 +75,27 @@ describe('LocationsController', () => {
       const result = await controller.create(dto);
       expect(service.create).toHaveBeenCalledWith(dto);
       expect(result).toEqual(mockLocation);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a location by ID', async () => {
+      const dto = { locationName: 'Updated', region: 'Central' as const };
+      const mockLocation = { locationId: '1', locationName: 'Updated', description: null, coordinates: null, region: 'Central' };
+      service.update.mockResolvedValue(mockLocation);
+
+      const result = await controller.update('1', dto);
+      expect(service.update).toHaveBeenCalledWith('1', dto);
+      expect(result).toEqual(mockLocation);
+    });
+  });
+
+  describe('remove', () => {
+    it('should remove a location by ID', async () => {
+      service.remove.mockResolvedValue(undefined);
+
+      await controller.remove('1');
+      expect(service.remove).toHaveBeenCalledWith('1');
     });
   });
 });

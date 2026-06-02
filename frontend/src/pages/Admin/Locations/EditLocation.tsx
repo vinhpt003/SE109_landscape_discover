@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
 import { locationsService } from '../../../services/locations.service'
@@ -10,6 +10,8 @@ import type { Region } from '../../../types'
 export default function EditLocation() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { id } = useParams<{ id: string }>()
+  const isNew = !id
 
   const [form, setForm] = useState<{
     locationName: string
@@ -24,17 +26,49 @@ export default function EditLocation() {
   })
   const [error, setError] = useState('')
 
+  const { data: existing } = useQuery({
+    queryKey: ['location', id],
+    queryFn: () => locationsService.fetchLocationById(id!),
+    enabled: !isNew && !!id,
+  })
+
+  useEffect(() => {
+    if (existing) {
+      setForm({
+        locationName: existing.locationName,
+        description: existing.description ?? '',
+        coordinates: existing.coordinates ?? '',
+        region: existing.region ?? '',
+      })
+    }
+  }, [existing])
+
+  const invalidateLists = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-locations'] })
+    queryClient.invalidateQueries({ queryKey: ['locations'] })
+    if (id) queryClient.invalidateQueries({ queryKey: ['location', id] })
+  }
+
+  const payload = () => ({
+    locationName: form.locationName,
+    description: form.description || undefined,
+    coordinates: form.coordinates || undefined,
+    region: (form.region as Region) || undefined,
+  })
+
   const createMutation = useMutation({
-    mutationFn: () =>
-      locationsService.createLocation({
-        locationName: form.locationName,
-        description: form.description || undefined,
-        coordinates: form.coordinates || undefined,
-        region: (form.region as Region) || undefined,
-      }),
+    mutationFn: () => locationsService.createLocation(payload()),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-locations'] })
-      queryClient.invalidateQueries({ queryKey: ['locations'] })
+      invalidateLists()
+      navigate('/admin/locations')
+    },
+    onError: (err: any) => setError(err?.response?.data?.message ?? 'Có lỗi xảy ra'),
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: () => locationsService.updateLocation(id!, payload()),
+    onSuccess: () => {
+      invalidateLists()
       navigate('/admin/locations')
     },
     onError: (err: any) => setError(err?.response?.data?.message ?? 'Có lỗi xảy ra'),
@@ -51,13 +85,14 @@ export default function EditLocation() {
 
   const handleSave = () => {
     if (!validate()) return
-    createMutation.mutate()
+    if (isNew) createMutation.mutate()
+    else updateMutation.mutate()
   }
 
   const update = (field: keyof typeof form, value: string) =>
     setForm(prev => ({ ...prev, [field]: value }))
 
-  const isSaving = createMutation.isPending
+  const isSaving = createMutation.isPending || updateMutation.isPending
 
   return (
     <div className="bg-surface min-h-screen flex">
@@ -80,7 +115,7 @@ export default function EditLocation() {
                   Quay lại danh sách
                 </Link>
                 <h2 className="font-display text-headline-lg text-on-background">
-                  Thêm địa điểm mới
+                  {isNew ? 'Thêm địa điểm mới' : 'Chỉnh sửa địa điểm'}
                 </h2>
               </div>
 
@@ -99,7 +134,7 @@ export default function EditLocation() {
                   disabled={isSaving}
                   className="px-5 py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity shadow-float disabled:opacity-60"
                 >
-                  {isSaving ? 'Đang lưu...' : 'Tạo địa điểm'}
+                  {isSaving ? 'Đang lưu...' : isNew ? 'Tạo địa điểm' : 'Lưu thay đổi'}
                 </button>
               </div>
             </div>

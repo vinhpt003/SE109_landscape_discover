@@ -78,6 +78,7 @@ export default function App() {
             <Route path="/admin/landmarks/:id/edit" element={<AdminEditLandmark />} />
             <Route path="/admin/locations" element={<AdminLocations />} />
             <Route path="/admin/locations/new" element={<AdminEditLocation />} />
+            <Route path="/admin/locations/:id/edit" element={<AdminEditLocation />} />
             <Route path="/admin/users"              element={<AdminUsers />} />
             <Route path="/admin/comments"           element={<AdminComments />} />
           </Route>

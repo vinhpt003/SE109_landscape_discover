@@ -8,6 +8,8 @@ export interface CreateLocationPayload {
   region?: Region
 }
 
+export type UpdateLocationPayload = Partial<CreateLocationPayload>
+
 export const locationsService = {
   async fetchLocations(): Promise<Location[]> {
     const { data } = await api.get<Location[]>('/locations')
@@ -22,5 +24,14 @@ export const locationsService = {
   async createLocation(payload: CreateLocationPayload): Promise<Location> {
     const { data } = await api.post<Location>('/locations', payload)
     return data
+  },
+
+  async updateLocation(id: string, payload: UpdateLocationPayload): Promise<Location> {
+    const { data } = await api.patch<Location>(`/locations/${id}`, payload)
+    return data
+  },
+
+  async deleteLocation(id: string): Promise<void> {
+    await api.delete(`/locations/${id}`)
   },
 }

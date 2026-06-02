@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AdminSideNav from '../../../components/layouts/AdminSideNav'
 import AdminTopBar from '../../../components/layouts/AdminTopBar'
 import { locationsService } from '../../../services/locations.service'
-import type { Region } from '../../../types'
+import type { Region, Location } from '../../../types'
 
 // ── Region badge ────────────────────────────────────────────────────────────
 const REGION_STYLE: Record<Region, string> = {
@@ -37,6 +37,7 @@ function RegionBadge({ region }: { region: Region | null | undefined }) {
 // ── Page ────────────────────────────────────────────────────────────────────
 export default function AdminLocations() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [regionFilter, setRegionFilter] = useState<Region | ''>('')
 
@@ -44,6 +45,21 @@ export default function AdminLocations() {
     queryKey: ['admin-locations'],
     queryFn: () => locationsService.fetchLocations(),
   })
+
+  const deleteMutation = useMutation({
+    mutationFn: (locationId: string) => locationsService.deleteLocation(locationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-locations'] })
+      queryClient.invalidateQueries({ queryKey: ['locations'] })
+    },
+    onError: (err: any) =>
+      window.alert(err?.response?.data?.message ?? 'Không thể xóa địa điểm'),
+  })
+
+  const handleDelete = (loc: Location) => {
+    if (!window.confirm(`Xóa địa điểm "${loc.locationName}"?`)) return
+    deleteMutation.mutate(loc.locationId)
+  }
 
   const filtered = locations.filter(loc => {
     const matchSearch =
@@ -73,7 +89,7 @@ export default function AdminLocations() {
               <div>
                 <h1 className="font-display text-headline-lg text-on-surface">Quản lý địa điểm</h1>
                 <p className="font-sans text-body-md text-on-surface-variant mt-1">
-                  Xem danh sách và thêm các địa điểm du lịch.
+                  Xem, thêm, chỉnh sửa và xóa các địa điểm du lịch.
                 </p>
               </div>
               <button
@@ -140,13 +156,14 @@ export default function AdminLocations() {
                       <th className="py-4 px-6">Mô tả</th>
                       <th className="py-4 px-6">Tọa độ</th>
                       <th className="py-4 px-6">Vùng miền</th>
+                      <th className="py-4 px-6 text-right">Hành động</th>
                     </tr>
                   </thead>
 
                   <tbody className="font-body-md text-body-md text-on-surface divide-y divide-surface-variant">
                     {isLoading && (
                       <tr>
-                        <td colSpan={4} className="py-16 text-center">
+                        <td colSpan={5} className="py-16 text-center">
                           <div className="w-8 h-8 rounded-full border-4 border-primary-fixed border-t-primary animate-spin mx-auto" />
                         </td>
                       </tr>
@@ -155,7 +172,7 @@ export default function AdminLocations() {
                     {!isLoading && filtered.map(loc => (
                       <tr
                         key={loc.locationId}
-                        className="transition-colors hover:bg-surface-container-low"
+                        className="transition-colors group hover:bg-surface-container-low"
                       >
                         <td className="py-4 px-6 font-label-md text-label-md">
                           <div className="flex items-center gap-3">
@@ -174,12 +191,31 @@ export default function AdminLocations() {
                         <td className="py-4 px-6">
                           <RegionBadge region={loc.region} />
                         </td>
+                        <td className="py-4 px-6 text-right">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => navigate(`/admin/locations/${loc.locationId}/edit`)}
+                              className="p-2 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-container transition-colors"
+                              title="Chỉnh sửa"
+                            >
+                              <span className="material-symbols-outlined">edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(loc)}
+                              disabled={deleteMutation.isPending}
+                              className="p-2 text-on-surface-variant hover:text-error rounded-full hover:bg-error-container transition-colors disabled:opacity-50"
+                              title="Xóa"
+                            >
+                              <span className="material-symbols-outlined">delete</span>
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
 
                     {!isLoading && filtered.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="py-16 text-center text-on-surface-variant font-body-md text-body-md">
+                        <td colSpan={5} className="py-16 text-center text-on-surface-variant font-body-md text-body-md">
                           <span className="material-symbols-outlined text-[48px] block mb-3 opacity-40">location_off</span>
                           Không tìm thấy địa điểm nào phù hợp.
                         </td>
