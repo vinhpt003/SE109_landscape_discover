@@ -23,6 +23,8 @@ const EditMyPost  = lazy(() => import('./pages/MyPosts/EditMyPost'))
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'))
 const AdminLandmarks = lazy(() => import('./pages/Admin/Landmarks'))
 const AdminEditLandmark = lazy(() => import('./pages/Admin/Landmarks/EditLandmark'))
+const AdminLocations    = lazy(() => import('./pages/Admin/Locations'))
+const AdminEditLocation = lazy(() => import('./pages/Admin/Locations/EditLocation'))
 const AdminUsers        = lazy(() => import('./pages/Admin/Users'))
 const AdminComments     = lazy(() => import('./pages/Admin/Comments'))
 
@@ -74,6 +76,8 @@ export default function App() {
             <Route path="/admin/landmarks" element={<AdminLandmarks />} />
             <Route path="/admin/landmarks/new" element={<AdminEditLandmark />} />
             <Route path="/admin/landmarks/:id/edit" element={<AdminEditLandmark />} />
+            <Route path="/admin/locations" element={<AdminLocations />} />
+            <Route path="/admin/locations/new" element={<AdminEditLocation />} />
             <Route path="/admin/users"              element={<AdminUsers />} />
             <Route path="/admin/comments"           element={<AdminComments />} />
           </Route>
