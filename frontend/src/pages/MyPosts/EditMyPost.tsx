@@ -251,6 +251,9 @@ export default function EditMyPost() {
                       {locations.map(loc => (
                         <option key={loc.locationId} value={loc.locationId}>
                           {loc.locationName}
+                          {loc.region === 'North' ? ' — Miền Bắc'
+                            : loc.region === 'Central' ? ' — Miền Trung'
+                            : loc.region === 'South' ? ' — Miền Nam' : ''}
                         </option>
                       ))}
                     </select>
