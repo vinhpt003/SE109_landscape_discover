@@ -2,10 +2,11 @@ import { NavLink, useNavigate } from 'react-router-dom'
 
 // ── Nav items config ───────────────────────────────────────────────────────
 const navItems = [
-  { label: 'Dashboard',        to: '/admin',           icon: 'dashboard' },
-  { label: 'Bài viết',         to: '/admin/landmarks', icon: 'landscape' },
-  { label: 'Bình luận',        to: '/admin/comments',  icon: 'chat_bubble' },
-  { label: 'Người dùng',       to: '/admin/users',     icon: 'group' },
+  { label: 'Dashboard',        to: '/admin',            icon: 'dashboard' },
+  { label: 'Bài viết',         to: '/admin/landmarks',  icon: 'landscape' },
+  { label: 'Địa điểm',         to: '/admin/locations',  icon: 'location_on' },
+  { label: 'Bình luận',        to: '/admin/comments',   icon: 'chat_bubble' },
+  { label: 'Người dùng',       to: '/admin/users',      icon: 'group' },
 ]
 
 // ── Component ──────────────────────────────────────────────────────────────
