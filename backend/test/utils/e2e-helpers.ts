@@ -1,6 +1,6 @@
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { Role, PostStatus } from '@prisma/client';
+import { Role, PostStatus, Region } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 export async function createTestUser(
@@ -24,12 +24,17 @@ export async function createTestUser(
   return { user, token };
 }
 
-export async function createTestLocation(prisma: PrismaService, suffix: string | number) {
+export async function createTestLocation(
+  prisma: PrismaService,
+  suffix: string | number,
+  region?: Region,
+) {
   return prisma.location.create({
     data: {
       locationName: `Location ${suffix}`,
       description: `Description ${suffix}`,
       coordinates: '10.0,20.0',
+      ...(region !== undefined && { region }),
     },
   });
 }

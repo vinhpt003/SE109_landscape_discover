@@ -95,6 +95,7 @@ describe('PostsService', () => {
           OR: [
             { title: { contains: 'query', mode: 'insensitive' } },
             { content: { contains: 'query', mode: 'insensitive' } },
+            { location: { locationName: { contains: 'query', mode: 'insensitive' } } },
           ],
         },
         include: {
@@ -357,6 +358,7 @@ describe('PostsService', () => {
             OR: [
               { title: { contains: 'Hội An', mode: 'insensitive' } },
               { content: { contains: 'Hội An', mode: 'insensitive' } },
+              { location: { locationName: { contains: 'Hội An', mode: 'insensitive' } } },
             ],
           }),
         }),

@@ -7,7 +7,7 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { createTestUser, createTestLocation } from './utils/e2e-helpers';
-import { Role } from '@prisma/client';
+import { Role, Region } from '@prisma/client';
 
 describe('LocationsController (integration / Testcontainer)', () => {
   let app: INestApplication<App>;
@@ -38,7 +38,7 @@ describe('LocationsController (integration / Testcontainer)', () => {
     const regularData = await createTestUser(prisma, jwtService, `${suffix}_reg1`, Role.RegisteredUser);
     regularToken = regularData.token;
 
-    existingLoc = await createTestLocation(prisma, suffix);
+    existingLoc = await createTestLocation(prisma, suffix, Region.North);
   });
 
   afterAll(async () => {
@@ -54,6 +54,9 @@ describe('LocationsController (integration / Testcontainer)', () => {
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body.length).toBeGreaterThan(0);
       expect(res.body.some((l: any) => l.locationId === existingLoc.locationId)).toBe(true);
+      // Verify region field is present in the response
+      const seededLoc = res.body.find((l: any) => l.locationId === existingLoc.locationId);
+      expect(seededLoc.region).toBe('North');
     });
   });
 
@@ -65,6 +68,7 @@ describe('LocationsController (integration / Testcontainer)', () => {
 
       expect(res.body.locationId).toBe(existingLoc.locationId);
       expect(res.body.locationName).toBe(existingLoc.locationName);
+      expect(res.body.region).toBe('North');
     });
 
     it('should return 404 for non-existent location', async () => {
@@ -79,6 +83,7 @@ describe('LocationsController (integration / Testcontainer)', () => {
       locationName: 'New Location',
       description: 'Desc',
       coordinates: '10,20',
+      region: 'South',
     };
 
     it('Admin should create new location', async () => {
@@ -90,6 +95,26 @@ describe('LocationsController (integration / Testcontainer)', () => {
 
       expect(res.body.locationId).toBeDefined();
       expect(res.body.locationName).toBe('New Location');
+      expect(res.body.region).toBe('South');
+    });
+
+    it('Admin should create location without region', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/locations')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ locationName: 'No Region Loc', description: 'Desc' })
+        .expect(201);
+
+      expect(res.body.locationId).toBeDefined();
+      expect(res.body.region).toBeNull();
+    });
+
+    it('should reject invalid region value', async () => {
+      await request(app.getHttpServer())
+        .post('/locations')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ locationName: 'Bad Region', region: 'InvalidRegion' })
+        .expect(400);
     });
 
     it('should forbid non-admin from creating location', async () => {

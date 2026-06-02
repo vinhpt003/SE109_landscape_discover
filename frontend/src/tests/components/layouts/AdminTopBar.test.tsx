@@ -26,7 +26,7 @@ describe('AdminTopBar component', () => {
     render(<AdminTopBar />)
 
     // Check search input
-    expect(screen.getByPlaceholderText('Search...')).toBeDefined()
+    expect(screen.getByPlaceholderText('Tìm kiếm địa danh...')).toBeDefined()
 
     // Check Quick Add button
     expect(screen.getByRole('button', { name: /Quick Add/i })).toBeDefined()
